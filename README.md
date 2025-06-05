@@ -38,6 +38,7 @@ Additionally, download the PingAM integration kit:
 
 - **https://www.pingidentity.com/en/resources/downloads/pingfederate.html**
 - tab **Add-Ons**
+- **PingAM Integration Kit 1.2**
 
 Unzip the file and place the extracted jar-file at this location:
 
