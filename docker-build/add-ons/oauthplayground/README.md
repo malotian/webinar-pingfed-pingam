@@ -34,16 +34,15 @@ Now use an oauth client in OAuthPlayground:
 
 - **Welcome**
 - **Authorization Code**
-- **Use OpenID Connect**  // for scope, add *email profile*
 - **Submit**
 
 The user will now be redirected to PingFederate and immediately to PingAM.
 
 When the flow completes the resulting page will display an access_token on the right hand side of the screen.
 
-Select **Get User Info** and the opening dialog displays details of the access_token.
+Select **Validate** and the opening dialog displays details of the access_token.
 
-The field **sub** contains the username that was used during the user journey in PingAM.
+The field **Username** contains the username that was used during the user journey in PingAM.
 
 To stop OAuthPlayground use the terminal in which it was launched:
 

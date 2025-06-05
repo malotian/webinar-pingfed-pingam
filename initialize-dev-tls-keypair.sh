@@ -11,6 +11,7 @@ export $(cat .env | grep HOSTNAME)
 export $(cat .env | grep HOSTNAME_PF)
 export $(cat .env | grep HOSTNAME_AM)
 export $(cat .env | grep HOSTNAME_PD)
+export $(cat .env | grep HOSTNAME_DS)
 export $(cat .env | grep HOSTNAME_PLAYGROUND)
 export $(cat .env | grep SSL_PWD)
 
@@ -25,7 +26,7 @@ keytool -genkey \
   -validity 365 \
   -keysize 2048 \
   -dname "CN=${HOSTNAME}" \
-  -ext san=dns:${HOSTNAME},dns:${HOSTNAME_PF},dns:${HOSTNAME_PD},dns:${HOSTNAME_AM},dns:${HOSTNAME_PLAYGROUND},dns:localhost
+  -ext san=dns:${HOSTNAME},dns:${HOSTNAME_PF},dns:${HOSTNAME_PD},dns:${HOSTNAME_AM},dns:${HOSTNAME_DS},dns:${HOSTNAME_PLAYGROUND},dns:localhost
 
 # Export public cert
 #
@@ -44,5 +45,6 @@ unset HOSTNAME
 unset HOSTNAME_PF
 unset HOSTNAME_AM
 unset HOSTNAME_PD
+unset HOSTNAME_DS
 unset HOSTNAME_PLAYGROUND
 unset SSL_PWD

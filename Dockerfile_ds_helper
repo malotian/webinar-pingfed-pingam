@@ -1,0 +1,11 @@
+FROM webinar/openjdk:17
+
+ARG version
+ENV build_version $version
+
+COPY products/pingds/$build_version /tmp/opendj.zip
+
+RUN /usr/local/bin/unzip -d /tmp -a /tmp/opendj.zip
+
+RUN mv /tmp/opendj /opt/opendj
+RUN rm /tmp/opendj.zip

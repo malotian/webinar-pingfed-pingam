@@ -166,8 +166,6 @@ public class ApiHelper {
             String responseAsText = EntityUtils.toString(response.getEntity());
             if (response.getStatusLine().getStatusCode() >= 400) {
                 LOGGER.warning(responseAsText);
-            } else {
-                LOGGER.info(responseAsText);
             }
             if (response.getHeaders("content-type").length == 0) {
                 // no header 'Content-Type' indicates a response of type plain text

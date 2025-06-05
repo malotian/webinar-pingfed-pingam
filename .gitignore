@@ -41,7 +41,14 @@ build/
 .env
 dev/*.p12
 dev/*.crt
+dev/*.bak
+dev/*.json
+dev/*rsa*
+dev/SASCHA.md
+products/pingfederate/export
+products/pingam/database
 *.lic
 *.zip
 *.war
-pf-pingam-adapter-1.0.jar
+src/test
+docker-build/add-ons/pingfederate/pf-pingam-adapter-1.2.jar

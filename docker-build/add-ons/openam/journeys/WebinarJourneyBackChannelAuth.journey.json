@@ -1,0 +1,145 @@
+{
+  "circlesOfTrust": {},
+  "emailTemplates": {},
+  "innerNodes": {},
+  "meta": {
+    "exportDate": "2025-06-03T16:05:20.167Z",
+    "exportTool": "frodo",
+    "exportToolVersion": "v3.1.0 [v20.18.0]",
+    "exportedBy": "amAdmin",
+    "origin": "https://openam.webinar.local:8449/openam",
+    "originAmVersion": "8.0.1"
+  },
+  "nodes": {
+    "4b0c1ada-e4c9-487d-aa7d-e4aa19613288": {
+      "_id": "4b0c1ada-e4c9-487d-aa7d-e4aa19613288",
+      "_outcomes": [
+        {
+          "displayName": "True",
+          "id": "true"
+        },
+        {
+          "displayName": "False",
+          "id": "false"
+        }
+      ],
+      "_type": {
+        "_id": "DataStoreDecisionNode",
+        "collection": true,
+        "name": "Data Store Decision"
+      }
+    },
+    "a3c909fa-056c-4fc9-9d57-3d884c590433": {
+      "_id": "a3c909fa-056c-4fc9-9d57-3d884c590433",
+      "_outcomes": [
+        {
+          "displayName": "Outcome",
+          "id": "outcome"
+        }
+      ],
+      "_type": {
+        "_id": "ValidatedPasswordNode",
+        "collection": true,
+        "name": "Platform Password"
+      },
+      "passwordAttribute": "password",
+      "validateInput": false
+    },
+    "c210d18b-7f63-48d6-9db9-0de3cb6bb4c8": {
+      "_id": "c210d18b-7f63-48d6-9db9-0de3cb6bb4c8",
+      "_outcomes": [
+        {
+          "displayName": "true",
+          "id": "true"
+        }
+      ],
+      "_type": {
+        "_id": "ScriptedDecisionNode",
+        "collection": true,
+        "name": "Scripted Decision"
+      },
+      "inputs": [
+        "*"
+      ],
+      "outcomes": [
+        "true"
+      ],
+      "outputs": [
+        "*"
+      ],
+      "script": "dcad7e46-0c56-4d35-8235-345ef8625513"
+    }
+  },
+  "saml2Entities": {},
+  "scripts": {
+    "dcad7e46-0c56-4d35-8235-345ef8625513": {
+      "_id": "dcad7e46-0c56-4d35-8235-345ef8625513",
+      "context": "AUTHENTICATION_TREE_DECISION_NODE",
+      "createdBy": "id=amAdmin,ou=user,ou=am-config",
+      "creationDate": 1748966114065,
+      "default": false,
+      "description": null,
+      "evaluatorVersion": "1.0",
+      "language": "JAVASCRIPT",
+      "lastModifiedBy": "id=amAdmin,ou=user,ou=am-config",
+      "lastModifiedDate": 1748966548470,
+      "name": "WebinarBackChannelAuthProperties",
+      "script": "\"/*\\n  - Data made available by nodes that have already executed are available in the sharedState variable.\\n  - The script should set outcome to either \\\"true\\\" or \\\"false\\\".\\n */\\nvar username = nodeState.get(\\\"username\\\");\\nvar foo = nodeState.get(\\\"another\\\");\\n\\nlogger.error(\\\"The username is {}\\\", username);\\n\\noutcome = \\\"true\\\";\""
+    }
+  },
+  "socialIdentityProviders": {},
+  "themes": [],
+  "tree": {
+    "_id": "WebinarJourneyBackChannelAuth",
+    "enabled": true,
+    "entryNodeId": "c210d18b-7f63-48d6-9db9-0de3cb6bb4c8",
+    "innerTreeOnly": false,
+    "mustRun": false,
+    "noSession": false,
+    "nodes": {
+      "4b0c1ada-e4c9-487d-aa7d-e4aa19613288": {
+        "connections": {
+          "false": "e301438c-0bd0-429c-ab0c-66126501069a",
+          "true": "70e691a5-1e33-4ac3-a356-e7b6d60d92e0"
+        },
+        "displayName": "Data Store Decision",
+        "nodeType": "DataStoreDecisionNode",
+        "x": 465,
+        "y": 82
+      },
+      "a3c909fa-056c-4fc9-9d57-3d884c590433": {
+        "connections": {
+          "outcome": "4b0c1ada-e4c9-487d-aa7d-e4aa19613288"
+        },
+        "displayName": "Platform Password",
+        "nodeType": "ValidatedPasswordNode",
+        "x": 260,
+        "y": 142
+      },
+      "c210d18b-7f63-48d6-9db9-0de3cb6bb4c8": {
+        "connections": {
+          "true": "a3c909fa-056c-4fc9-9d57-3d884c590433"
+        },
+        "displayName": "Scripted Decision",
+        "nodeType": "ScriptedDecisionNode",
+        "x": 66,
+        "y": 109
+      }
+    },
+    "staticNodes": {
+      "70e691a5-1e33-4ac3-a356-e7b6d60d92e0": {
+        "x": 687,
+        "y": 50
+      },
+      "e301438c-0bd0-429c-ab0c-66126501069a": {
+        "x": 698,
+        "y": 166
+      },
+      "startNode": {
+        "x": 50,
+        "y": 25
+      }
+    },
+    "uiConfig": {}
+  }
+}

@@ -1,0 +1,15 @@
+FROM openjdk:17-jdk
+
+RUN microdnf install findutils zip unzip
+
+COPY dev/pubCert.crt /tmp/pubCert.crt
+
+RUN keytool -importcert \
+    -alias pubCert \
+    -file /tmp/pubCert.crt \
+    -storepass changeit \
+    -keystore $JAVA_HOME/lib/security/cacerts \
+    -trustcacerts \
+    -noprompt
+
+RUN rm /tmp/pubCert.crt

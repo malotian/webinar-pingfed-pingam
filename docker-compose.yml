@@ -13,6 +13,7 @@ services:
     ports:
       - "9031:9031"
       - "9999:9999"
+      - "5005:5005"
     environment:
       - "PF_RUN_PF_CONSOLE_TITLE=Webinar"
       - "PF_RUN_PF_ADMIN_BASEURL=https://${PF_ADMIN_NODE}"
@@ -21,6 +22,7 @@ services:
 
   # https://openam.webinar.local:8449/openam/XUI/#login/
   # amAdmin, Password1
+  # https://openam.webinar.local:8449/openam/oauth2/alpha/.well-known/openid-configuration
   openamwebinarlocal:
     image: webinar/openam:latest
     container_name: openamwebinarlocal
@@ -28,6 +30,8 @@ services:
     restart: on-failure
     networks:
       - webinar
+    depends_on:
+      - dswebinarlocal
     ports:
       - "8449:8449"
     volumes:
@@ -52,6 +56,23 @@ services:
       - "636:636"
     volumes:
       - ./products/pingdirectory/pingdirectory.lic:/opt/pingdirectory/licence.lic
+
+  # cn=administrator/ password
+  # https://ds.webinar.local:8452/console
+  dswebinarlocal:
+    image: webinar/ds:latest
+    container_name: dswebinarlocal
+    hostname: ds.webinar.local
+    restart: on-failure
+    networks:
+      - webinar
+    ports:
+      - "1636:1636"
+      - "1689:1689"
+      - "8452:8452"
+      - "8989:8989"
+      - "4444:4444"
+      - "50636:50636"
 
 networks:
   webinar:

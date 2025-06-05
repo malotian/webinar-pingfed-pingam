@@ -1,0 +1,23 @@
+FROM tomcat:10-jdk17
+
+RUN apt update
+RUN apt install unzip zip
+
+RUN rm -rf /usr/local/tomcat/webapps/*
+
+RUN chmod 644 $JAVA_HOME/lib/security/cacerts
+ENV CATALINA_OPTS="$CATALINA_OPTS -server -Xmx2g -XX:MetaspaceSize=256m -XX:MaxMetaspaceSize=256m"
+
+RUN mkdir /usr/local/tomcat/ssl
+
+COPY dev/pubCert.crt /tmp/pubCert.crt
+
+RUN keytool -importcert \
+    -alias pubCert \
+    -file /tmp/pubCert.crt \
+    -storepass changeit \
+    -keystore $JAVA_HOME/lib/security/cacerts \
+    -trustcacerts \
+    -noprompt
+
+RUN rm -f /tmp/pubCert.crt

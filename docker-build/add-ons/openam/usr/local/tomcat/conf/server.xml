@@ -43,8 +43,7 @@
                 <Certificate
                         certificateKeystoreFile="/usr/local/tomcat/ssl/tlskey.p12"
                         certificateKeystorePassword="@@sslpwd@@"
-                        certificateKeyAlias="tlskey"
-                        certificateVerification="true"/>
+                        certificateKeyAlias="tlskey"/>
             </SSLHostConfig>
         </Connector>
 
@@ -53,9 +52,8 @@
                 <Alias>@@hostname@@</Alias>
                 <Valve className="org.apache.catalina.valves.AccessLogValve" directory="logs"
                        prefix="localhost_access_log" suffix=".txt"
-                       pattern="%h %l %u %t &quot;%r&quot; %s %b" />
+                       pattern="%h %l %u %t &quot;%r&quot; %s %b %D %F" />
             </Host>
-
         </Engine>
     </Service>
 </Server>

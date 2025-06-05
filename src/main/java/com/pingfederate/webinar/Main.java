@@ -25,6 +25,7 @@ public class Main {
     private ApiClient apiClient;
     private ApiHelper apiHelper;
     private String baseUrl;
+
     private JSONObject pingAmPdConfigTemplate;
     private String pingAmScriptNodeTemplate;
 
@@ -47,59 +48,76 @@ public class Main {
             Main m = new Main();
             m.initializeApiClient();
 
-            if(args.length > 0) {
+            if (args.length > 0) {
                 Set<String> arguments = new HashSet<>(Arrays.asList(args));
-                if(arguments.contains("update_script_node")) {
+                if (arguments.contains("configure_pingfederate")) {
+                    m.configurePingFederate();
+                }
+                if (arguments.contains("configure_pingam")) {
+                    m.pingAmAuthenticateForSession();
+                    m.configurePingAM();
+                }
+                if (arguments.contains("update_script_node")) {
                     m.pingAmAuthenticateForSession();
                     m.pingAmUpdateScriptNode();
-                    LOGGER.info("The script node was successfully updated");
-                } else {
-                    LOGGER.info("An unknown argument was given: %s");
                 }
-                System.exit(0);
+            } else {
+                LOGGER.info("No argument was given. Provide configure_pingfederate or configure_pingam or both");
             }
-
-            LOGGER.info("Configuring PingFederate now");
-
-            // initialize PingFederate
-            m.pfAcceptLicense();
-            m.pfCreateAdminAccount();
-
-            // configure PingFederate
-            m.pfImportKeyAndCert();
-            m.pfUpdateServerSettings();
-            m.pfConfigurePingAmIntegrationKit();
-            m.pfConfigureScopeManagement();
-            String policyContractId = m.pfAddAuthenticationPolicyContract();
-            m.pfAddAccessTokenManager();
-            m.pfAddAccessTokenMapping(policyContractId);
-            m.pfAddPolicyContractGrantMapping(policyContractId);
-            m.pfAddIdpAdapterGrantMapping();
-            m.pfAddOidcPolicyContract();
-            m.pfAddIdpAuthenticationPolicy(policyContractId);
-            m.pfAddOauthClient();
-            LOGGER.info("PingFederate was configured successfully");
-            LOGGER.info("Configuring PingAM now");
-
-            // initialize PingAM
-            m.pingAmCreateAdminAndConfig();
-            m.pingAmAuthenticateForSession();
-
-            // configure PingAM
-            m.pingAmConfigureServerDefaults();
-            m.pingAmConfigureGlobalServices();
-            m.pingAmCreateRealm();
-            m.pingAmConfigureRealm();
-            m.pingAmConfigureDirectory();
-            m.pingAmAddForgeRockAuthenticatorPushService();
-            m.pingAmAddForgeRockAuthenticatorOAthService();
-            m.pingAmAddWebAuthNEncryptionService();
-            m.pingAmAddSNSPushService();
-            LOGGER.info("PingAM was configured successfully");
-
         } catch (Exception e) {
             LOGGER.warning(e.getMessage());
         }
+    }
+
+    private void configurePingFederate() throws Exception {
+        LOGGER.info("Configuring PingFederate now");
+
+        // initialize PingFederate
+        pfAcceptLicense();
+        pfCreateAdminAccount();
+
+        // configure PingFederate
+        pfImportKeyAndCert();
+        pfUpdateServerSettings();
+        pfConfigureScopeManagement();
+        String policyContractId = pfAddAuthenticationPolicyContract();
+        pfAddAccessTokenManager();
+        pfAddAccessTokenMapping(policyContractId);
+        pfAddPolicyContractGrantMapping(policyContractId);
+        pfAddOauthClient();
+        pfAddOidcPolicyContract();
+
+        pfConfigurePingAmIntegrationKit("PingAMIdpAdapter", "PingAMIdpAdapterId", propsEnv.getProperty("PINGAM_JOURNEY"), null, null);
+        pfAddIdpAdapterGrantMapping("PingAMIdpAdapterId");
+        pfAddIdpAuthenticationPolicy("WebinarPingAMTree", "WebinarPingAMTreeId", policyContractId, "PingAMIdpAdapterId", true);
+
+        pfConfigurePingAmIntegrationKit("PingAMBackChannelAuthIdpAdapter", "PingAMBCAIdpAdapterId", propsEnv.getProperty("PINGAM_BACK_CHANNEL_AUTH_JOURNEY"), propsEnv.getProperty("PINGAM_BACK_CHANNEL_AUTH_CLIENT_ID"), propsEnv.getProperty("PINGAM_BACK_CHANNEL_AUTH_CLIENT_SECRET"));
+        pfAddIdpAdapterGrantMapping("PingAMBCAIdpAdapterId");
+        pfAddIdpAuthenticationPolicy("WebinarPingAMBCATree", "WebinarPingAMBCATreeId", policyContractId, "PingAMBCAIdpAdapterId", false);
+
+        LOGGER.info("PingFederate was configured successfully");
+    }
+
+    private void configurePingAM() throws Exception {
+        LOGGER.info("Configuring PingAM now");
+
+        // initialize PingAM
+        pingAmCreateAdminAndConfig();
+        pingAmAuthenticateForSession();
+        // configure PingAM
+        pingAmConfigureServerDefaults();
+        pingAmConfigureGlobalServices();
+        pingAmCreateRealm();
+        pingAmConfigureRealm();
+        pingAmConfigureDirectory();
+        pingAmOAuth2ProviderService();
+        pingAmBackChannelOAuthClient();
+        pingAmAddForgeRockAuthenticatorPushService();
+        pingAmAddForgeRockAuthenticatorOAthService();
+        pingAmAddWebAuthNEncryptionService();
+        pingAmAddSNSPushService();
+
+        LOGGER.info("PingAM was configured successfully");
     }
 
     private void initializeApiClient() throws Exception {
@@ -196,6 +214,7 @@ public class Main {
         String publicCertString = Base64.getEncoder().encodeToString(publicCertStream.readAllBytes());
         publicCertStream.close();
 
+        /* Import (if necessary) and active our key */
         boolean p12AlreadyImported = false;
         String p12Id = null;
         KeyPairViews keyPairs = apiClient.keyPairssslServerApi().getKeyPairs();
@@ -225,6 +244,7 @@ public class Main {
         sslServerSettings.setActiveAdminConsoleCerts(activeCerts);
         apiClient.keyPairssslServerApi().updateSettings(sslServerSettings);
 
+        /* Import (if necessary) our public cert */
         boolean certAlreadyImported = false;
         CertViews trustedCAs = apiClient.certificatescaApi().getTrustedCAs();
         for (CertView next : trustedCAs.getItems()) {
@@ -302,23 +322,7 @@ public class Main {
         contractAttribute.setName("subject");
 
         contract.addCoreAttributesItem(contractAttribute);
-
-        AuthenticationPolicyContractAttribute sessionUsername = new AuthenticationPolicyContractAttribute();
-        sessionUsername.setName("sessionUsername");
-        AuthenticationPolicyContractAttribute requestedJourney = new AuthenticationPolicyContractAttribute();
-        requestedJourney.setName("requestedJourney");
-        contract.addExtendedAttributesItem(sessionUsername);
-        contract.addExtendedAttributesItem(requestedJourney);
-
-        String ldapAttributes = propsEnv.getProperty("PINGAM_LDAP_ATTRIBUTE");
-        if(ldapAttributes != null) {
-            String attributes[] = ldapAttributes.split(",");
-            for(String next : attributes) {
-                AuthenticationPolicyContractAttribute nextAttr = new AuthenticationPolicyContractAttribute();
-                nextAttr.setName(next);
-                contract.addExtendedAttributesItem(nextAttr);
-            }
-        }
+        contract.setExtendedAttributes(new ArrayList<>());
 
         AuthenticationPolicyContract policyContract = apiClient.authenticationPolicyContractsApi().createAuthenticationPolicyContract(contract);
         return policyContract.getId();
@@ -342,11 +346,11 @@ public class Main {
                         "/oauth/accessTokenManagers/descriptors",
                         "com.pingidentity.pf.access.token.management.plugins.JwtBearerAccessTokenManagementPlugin")
         );
-        ConfigField fieldTokenUseCnetralizedSigningKeys = new ConfigField();
-        fieldTokenUseCnetralizedSigningKeys.setName("Use Centralized Signing Key");
-        fieldTokenUseCnetralizedSigningKeys.setValue("true");
-        fieldTokenUseCnetralizedSigningKeys.setEncryptedValue(null);
-        fieldTokenUseCnetralizedSigningKeys.setInherited(false);
+        ConfigField fieldTokenUseCentralizedSigningKeys = new ConfigField();
+        fieldTokenUseCentralizedSigningKeys.setName("Use Centralized Signing Key");
+        fieldTokenUseCentralizedSigningKeys.setValue("true");
+        fieldTokenUseCentralizedSigningKeys.setEncryptedValue(null);
+        fieldTokenUseCentralizedSigningKeys.setInherited(false);
 
         ConfigField fieldJwsAlg = new ConfigField();
         fieldJwsAlg.setName("JWS Algorithm");
@@ -355,7 +359,7 @@ public class Main {
         fieldJwsAlg.setInherited(false);
 
         PluginConfiguration pc = new PluginConfiguration();
-        pc.addFieldsItem(fieldTokenUseCnetralizedSigningKeys);
+        pc.addFieldsItem(fieldTokenUseCentralizedSigningKeys);
         pc.addFieldsItem(fieldJwsAlg);
 
         atm.setConfiguration(pc);
@@ -364,31 +368,14 @@ public class Main {
         attrUsername.setName("username");
         attrUsername.setMultiValued(false);
 
-        AccessTokenAttribute attrSessionUsername = new AccessTokenAttribute();
-        attrSessionUsername.setName("sessionUsername");
-        attrSessionUsername.setMultiValued(false);
-
-        AccessTokenAttribute attrRequestedJourney = new AccessTokenAttribute();
-        attrRequestedJourney.setName("requestedJourney");
-        attrRequestedJourney.setMultiValued(false);
-
         AccessTokenAttributeContract atac = new AccessTokenAttributeContract();
         atac.addExtendedAttributesItem(attrUsername);
-        atac.addExtendedAttributesItem(attrSessionUsername);
-        atac.addExtendedAttributesItem(attrRequestedJourney);
-
-        String ldapAttributes = propsEnv.getProperty("PINGAM_LDAP_ATTRIBUTE");
-        if(ldapAttributes != null) {
-            String attributes[] = ldapAttributes.split(",");
-            for(String next : attributes) {
-                AccessTokenAttribute nextAttr = new AccessTokenAttribute();
-                nextAttr.setName(next);
-                nextAttr.setMultiValued(false);
-                atac.addExtendedAttributesItem(nextAttr);
-            }
-        }
-
         atm.setAttributeContract(atac);
+
+        TokenEndpointAttributeContract teac = new TokenEndpointAttributeContract();
+        teac.setAttributes(new ArrayList<>());
+        teac.setInherited(false);
+        atm.setTokenEndpointAttributeContract(teac);
 
         atm.setSequenceNumber(5);
 
@@ -396,69 +383,87 @@ public class Main {
 
     }
 
-    private void pfAddAccessTokenMapping(String authenticationPolicyContractId) throws Exception {
+    private void pfAddIdpAuthenticationPolicy(String policyTreeName, String policyTreeId, String authenticationPolicyContractId, String pingAmAdapterId, boolean enabled) throws Exception {
 
-        List<AccessTokenMapping> tokenMappings = apiClient.oauthaccessTokenMappingsApi().getMappings();
-        for (AccessTokenMapping next : tokenMappings) {
-            if ("WebinarATM".equalsIgnoreCase(next.getAccessTokenManagerRef().getId())) {
-                return;
-            }
-        }
+        /* Fail branch */
+        PolicyAction failAction = new PolicyAction();
+        failAction.setType(PolicyAction.TypeEnum.DONE);
+        failAction.setContext("Fail");
 
-        AccessTokenMapping mapping = new AccessTokenMapping();
+        AuthenticationPolicyTreeNode failNode = new AuthenticationPolicyTreeNode();
+        failNode.setAction(failAction);
 
-        AccessTokenMappingContext ctxt = new AccessTokenMappingContext();
-        ctxt.setType(AccessTokenMappingContext.TypeEnum.AUTHENTICATION_POLICY_CONTRACT);
-        ctxt.setContextRef(
+        /* Success branch */
+        ApcMappingPolicyAction successAction = new ApcMappingPolicyAction();
+        successAction.setType(PolicyAction.TypeEnum.APC_MAPPING);
+        successAction.setContext("Success");
+        successAction.setAuthenticationPolicyContractRef(
                 createResourceLink(
                         baseUrl,
                         "/authenticationPolicyContracts",
                         authenticationPolicyContractId)
         );
 
-        mapping.setContext(ctxt);
-        mapping.setAccessTokenManagerRef(
-                createResourceLink(
-                        baseUrl,
-                        "/oauth/accessTokenManagers",
-                        "WebinarATM")
-        );
+        SourceTypeIdKey subjectSource = new SourceTypeIdKey();
+        subjectSource.setType(SourceTypeIdKey.TypeEnum.ADAPTER);
+        subjectSource.setId(pingAmAdapterId);
 
-        SourceTypeIdKey source = new SourceTypeIdKey();
-        source.setType(SourceTypeIdKey.TypeEnum.AUTHENTICATION_POLICY_CONTRACT);
-
-        AttributeFulfillmentValue attrUsername = new AttributeFulfillmentValue();
-        attrUsername.setSource(source);
-        attrUsername.setValue("subject");
-
-        AttributeFulfillmentValue attrSessionUsername = new AttributeFulfillmentValue();
-        attrSessionUsername.setSource(source);
-        attrSessionUsername.setValue("sessionUsername");
-
-        AttributeFulfillmentValue attrRequestedJourney = new AttributeFulfillmentValue();
-        attrRequestedJourney.setSource(source);
-        attrRequestedJourney.setValue("requestedJourney");
+        AttributeFulfillmentValue subject = new AttributeFulfillmentValue();
+        subject.setSource(subjectSource);
+        subject.setValue(propsEnv.getProperty("PINGAM_USERNAME_ATTR"));
 
         Map<String, AttributeFulfillmentValue> fulfillmentValueMap = new HashMap<>();
-        fulfillmentValueMap.put("username", attrUsername);
-        fulfillmentValueMap.put("sessionUsername", attrSessionUsername);
-        fulfillmentValueMap.put("requestedJourney", attrRequestedJourney);
+        fulfillmentValueMap.put("subject", subject);
 
-        String ldapAttributes = propsEnv.getProperty("PINGAM_LDAP_ATTRIBUTE");
-        if(ldapAttributes != null) {
-            String attributes[] = ldapAttributes.split(",");
-            for(String next : attributes) {
-                AttributeFulfillmentValue nextAttr = new AttributeFulfillmentValue();
-                nextAttr.setSource(source);
-                nextAttr.setValue(next);
-                fulfillmentValueMap.put(next, nextAttr);
-            }
-        }
-
+        AttributeMapping mapping = new AttributeMapping();
         mapping.setAttributeContractFulfillment(fulfillmentValueMap);
         mapping.setAttributeSources(new ArrayList<>());
+        successAction.setAttributeMapping(mapping);
 
-        apiClient.oauthaccessTokenMappingsApi().createMapping(mapping, false);
+        AuthenticationPolicyTreeNode successNode = new AuthenticationPolicyTreeNode();
+        successNode.setAction(successAction);
+
+        /* Source node */
+        AuthnSourcePolicyAction rootAction = new AuthnSourcePolicyAction();
+        rootAction.setType(PolicyAction.TypeEnum.AUTHN_SOURCE);
+        AuthenticationSource authnSource = new AuthenticationSource();
+        authnSource.setType(AuthenticationSource.TypeEnum.ADAPTER);
+        authnSource.setSourceRef(createResourceLink(
+                baseUrl,
+                "/idp/adapters",
+                pingAmAdapterId)
+        );
+        rootAction.setAuthenticationSource(authnSource);
+
+        /* Root tree node */
+        AuthenticationPolicyTreeNode rootNode = new AuthenticationPolicyTreeNode();
+        rootNode.setAction(rootAction);
+        rootNode.addChildrenItem(failNode);
+        rootNode.addChildrenItem(successNode);
+
+        AuthenticationPolicyTree tree = new AuthenticationPolicyTree();
+        tree.setId(policyTreeId);
+        tree.setName(policyTreeName);
+        tree.setEnabled(enabled);
+        tree.setDescription("WebinarPolicy");
+        tree.setHandleFailuresLocally(false);
+        tree.setRootNode(rootNode);
+
+        AuthenticationPolicy policy = new AuthenticationPolicy();
+        policy.addAuthnSelectionTreesItem(tree);
+
+        String policyString = new ObjectMapper().writeValueAsString(tree);
+        policyString = policyString.replaceAll("\"type\":[\\\\s]{0,3}\"ApcMappingPolicyAction\",", "");
+        policyString = policyString.replaceAll("\"type\":[\\\\s]{0,3}\"AuthnSourcePolicyAction\",", "");
+        policyString = policyString.replaceAll("\"attributeRules\":[\\\\s]{0,3}null,", "");
+        policyString = policyString.replaceAll("\"type\":[\\\\s]{0,3}\"PolicyAction\",", "");
+
+        apiHelper.postPf(baseUrl, "/authenticationPolicies/policy", (JSONObject) new JSONParser().parse(policyString), new ArrayList<>());
+
+        JSONObject payload = new JSONObject();
+        payload.put("enableIdpAuthnSelection", true);
+        payload.put("enableSpAuthnSelection", false);
+        apiHelper.putPf(baseUrl, "/authenticationPolicies/settings", payload, new ArrayList<>());
     }
 
     private void pfAddOidcPolicyContract() throws Exception {
@@ -487,209 +492,40 @@ public class Main {
         attrUsername.setIncludeInUserInfo(true);
         attrUsername.setMultiValued(false);
 
-        OpenIdConnectAttribute attrSessionUsername = new OpenIdConnectAttribute();
-        attrSessionUsername.setName("sessionUsername");
-        attrSessionUsername.setIncludeInIdToken(false);
-        attrSessionUsername.setIncludeInUserInfo(true);
-        attrSessionUsername.setMultiValued(false);
-
-        OpenIdConnectAttribute attrRequestedJourney = new OpenIdConnectAttribute();
-        attrRequestedJourney.setName("requestedJourney");
-        attrRequestedJourney.setIncludeInIdToken(false);
-        attrRequestedJourney.setIncludeInUserInfo(true);
-        attrRequestedJourney.setMultiValued(false);
-
         OpenIdConnectAttributeContract oidcac = new OpenIdConnectAttributeContract();
         oidcac.addCoreAttributesItem(attrUsername);
-        oidcac.addExtendedAttributesItem(attrSessionUsername);
-        oidcac.addExtendedAttributesItem(attrRequestedJourney);
-
-        String ldapAttributes = propsEnv.getProperty("PINGAM_LDAP_ATTRIBUTE");
-        if(ldapAttributes != null) {
-            String attributes[] = ldapAttributes.split(",");
-            for(String next : attributes) {
-                OpenIdConnectAttribute nextAttr = new OpenIdConnectAttribute();
-                nextAttr.setName(next);
-                nextAttr.setIncludeInIdToken(false);
-                nextAttr.setIncludeInUserInfo(true);
-                nextAttr.setMultiValued(false);
-                oidcac.addExtendedAttributesItem(nextAttr);
-            }
-        }
 
         policy.setAttributeContract(oidcac);
 
+        AttributeMapping mapping = new AttributeMapping();
         Map<String, AttributeFulfillmentValue> attributeFulfillmentValueMap = new HashMap();
 
-        SourceTypeIdKey source = new SourceTypeIdKey();
-        source.setType(SourceTypeIdKey.TypeEnum.TOKEN);
-
         AttributeFulfillmentValue sub = new AttributeFulfillmentValue();
+
+        SourceTypeIdKey subSource = new SourceTypeIdKey();
+        subSource.setType(SourceTypeIdKey.TypeEnum.TOKEN);
+
         sub.setValue("username");
-        sub.setSource(source);
+        sub.setSource(subSource);
+
         attributeFulfillmentValueMap.put("sub", sub);
 
-        AttributeFulfillmentValue sessionUsername = new AttributeFulfillmentValue();
-        sessionUsername.setValue("sessionUsername");
-        sessionUsername.setSource(source);
-        attributeFulfillmentValueMap.put("sessionUsername", sessionUsername);
-
-        AttributeFulfillmentValue requestedJourney = new AttributeFulfillmentValue();
-        requestedJourney.setValue("requestedJourney");
-        requestedJourney.setSource(source);
-        attributeFulfillmentValueMap.put("requestedJourney", requestedJourney);
-
-        if(ldapAttributes != null) {
-            String attributes[] = ldapAttributes.split(",");
-            for(String next : attributes) {
-                AttributeFulfillmentValue nextValue = new AttributeFulfillmentValue();
-                nextValue.setValue(next);
-                nextValue.setSource(source);
-                attributeFulfillmentValueMap.put(next, nextValue);
-            }
-        }
-
-        AttributeMapping mapping = new AttributeMapping();
         mapping.setAttributeContractFulfillment(attributeFulfillmentValueMap);
         mapping.setAttributeSources(new ArrayList<>());
 
         policy.setAttributeMapping(mapping);
 
-        Map<String, ParameterValues> scopesProfile = new HashMap<>();
-        ParameterValues pv = new ParameterValues();
-        pv.addValuesItem("sessionUsername");
-        pv.addValuesItem("requestedJourney");
-        if(ldapAttributes != null) {
-            String attributes[] = ldapAttributes.split(",");
-            for(String next : attributes) {
-                pv.addValuesItem(next);
-            }
-        }
-        scopesProfile.put("profile", pv);
-        policy.setScopeAttributeMappings(scopesProfile);
-
         apiClient.oauthopenIdConnectApi().createPolicy(policy, false);
     }
 
-    private void pfAddIdpAuthenticationPolicy(String authenticationPolicyContractId) throws Exception {
-
-        /* Fail branch */
-        PolicyAction failAction = new PolicyAction();
-        failAction.setType(PolicyAction.TypeEnum.DONE);
-        failAction.setContext("Fail");
-
-        AuthenticationPolicyTreeNode failNode = new AuthenticationPolicyTreeNode();
-        failNode.setAction(failAction);
-
-        /* Success branch */
-        ApcMappingPolicyAction successAction = new ApcMappingPolicyAction();
-        successAction.setType(PolicyAction.TypeEnum.APC_MAPPING);
-        successAction.setContext("Success");
-        successAction.setAuthenticationPolicyContractRef(
-                createResourceLink(
-                        baseUrl,
-                        "/authenticationPolicyContracts",
-                        authenticationPolicyContractId)
-        );
-
-        SourceTypeIdKey source = new SourceTypeIdKey();
-        source.setType(SourceTypeIdKey.TypeEnum.ADAPTER);
-        source.setId("PingAMIdpAdapterId");
-
-        AttributeFulfillmentValue subject = new AttributeFulfillmentValue();
-        subject.setSource(source);
-        subject.setValue(propsEnv.getProperty("PINGAM_USERNAME_ATTR"));
-
-        AttributeFulfillmentValue sessionUsername = new AttributeFulfillmentValue();
-        sessionUsername.setSource(source);
-        sessionUsername.setValue("sessionUsername");
-
-        AttributeFulfillmentValue requestedJourney = new AttributeFulfillmentValue();
-        requestedJourney.setSource(source);
-        requestedJourney.setValue("requestedJourney");
-
-        Map<String, AttributeFulfillmentValue> fulfillmentValueMap = new HashMap<>();
-        fulfillmentValueMap.put("subject", subject);
-        fulfillmentValueMap.put("sessionUsername", sessionUsername);
-        fulfillmentValueMap.put("requestedJourney", requestedJourney);
-
-        String ldapAttributes = propsEnv.getProperty("PINGAM_LDAP_ATTRIBUTE");
-        if(ldapAttributes != null) {
-            String attributes[] = ldapAttributes.split(",");
-            for(String next : attributes) {
-                AttributeFulfillmentValue nextValue = new AttributeFulfillmentValue();
-                nextValue.setSource(source);
-                nextValue.setValue(next);
-                fulfillmentValueMap.put(next, nextValue);
-            }
-        }
-
-        AttributeMapping mapping = new AttributeMapping();
-        mapping.setAttributeContractFulfillment(fulfillmentValueMap);
-        mapping.setAttributeSources(new ArrayList<>());
-        successAction.setAttributeMapping(mapping);
-
-        AuthenticationPolicyTreeNode successNode = new AuthenticationPolicyTreeNode();
-        successNode.setAction(successAction);
-
-        /* Source node */
-        AuthnSourcePolicyAction rootAction = new AuthnSourcePolicyAction();
-        rootAction.setType(PolicyAction.TypeEnum.AUTHN_SOURCE);
-        AuthenticationSource authnSource = new AuthenticationSource();
-        authnSource.setType(AuthenticationSource.TypeEnum.ADAPTER);
-        authnSource.setSourceRef(createResourceLink(
-                baseUrl,
-                "/idp/adapters",
-                "PingAMIdpAdapterId")
-        );
-        rootAction.setAuthenticationSource(authnSource);
-
-        /* Root tree node */
-        AuthenticationPolicyTreeNode rootNode = new AuthenticationPolicyTreeNode();
-        rootNode.setAction(rootAction);
-        rootNode.addChildrenItem(failNode);
-        rootNode.addChildrenItem(successNode);
-
-        AuthenticationPolicyTree tree = new AuthenticationPolicyTree();
-        tree.setId("WebinarPingAMTreeId");
-        tree.setName("WebinarPingAMTree");
-        tree.setEnabled(true);
-        tree.setDescription("WebinarPolicy");
-        tree.setHandleFailuresLocally(false);
-        tree.setRootNode(rootNode);
-
-        AuthenticationPolicy policy = new AuthenticationPolicy();
-        policy.addAuthnSelectionTreesItem(tree);
-
-        String policyString = new ObjectMapper().writeValueAsString(tree);
-        policyString = policyString.replaceAll("\"type\":[\\\\s]{0,3}\"ApcMappingPolicyAction\",", "");
-        policyString = policyString.replaceAll("\"type\":[\\\\s]{0,3}\"AuthnSourcePolicyAction\",", "");
-        policyString = policyString.replaceAll("\"attributeRules\":[\\\\s]{0,3}null,", "");
-        policyString = policyString.replaceAll("\"type\":[\\\\s]{0,3}\"PolicyAction\",", "");
-
-        apiHelper.postPf(baseUrl, "/authenticationPolicies/policy", (JSONObject) new JSONParser().parse(policyString), new ArrayList<>());
-
-        JSONObject payload = new JSONObject();
-        payload.put("enableIdpAuthnSelection", true);
-        payload.put("enableSpAuthnSelection", false);
-        apiHelper.putPf(baseUrl, "/authenticationPolicies/settings", payload, new ArrayList<>());
-    }
-
-    private void pfAddIdpAdapterGrantMapping() throws Exception {
-
-        IdpAdapterMappings idpAdapterMappings = apiClient.oauthidpAdapterMappingsApi().getIdpAdapterMappings();
-        for (IdpAdapterMapping next : idpAdapterMappings.getItems()) {
-            if ("PingAMIdpAdapterId".equalsIgnoreCase(next.getId())) {
-                return;
-            }
-        }
+    private void pfAddIdpAdapterGrantMapping(String pingAmAdapterId) throws Exception {
 
         IdpAdapterMapping mapping = new IdpAdapterMapping();
-        mapping.setId("PingAMIdpAdapterId");
+        mapping.setId(pingAmAdapterId);
         mapping.setIdpAdapterRef(createResourceLink(
                 baseUrl,
                 "/idp/adapters",
-                "PingAMIdpAdapterId")
+                pingAmAdapterId)
         );
 
         mapping.setAttributeSources(new ArrayList<>());
@@ -760,6 +596,50 @@ public class Main {
 
     }
 
+    private void pfAddAccessTokenMapping(String authenticationPolicyContractId) throws Exception {
+
+        List<AccessTokenMapping> tokenMappings = apiClient.oauthaccessTokenMappingsApi().getMappings();
+        for (AccessTokenMapping next : tokenMappings) {
+            if ("WebinarATM".equalsIgnoreCase(next.getAccessTokenManagerRef().getId())) {
+                return;
+            }
+        }
+
+        AccessTokenMapping mapping = new AccessTokenMapping();
+
+        AccessTokenMappingContext ctxt = new AccessTokenMappingContext();
+        ctxt.setType(AccessTokenMappingContext.TypeEnum.AUTHENTICATION_POLICY_CONTRACT);
+        ctxt.setContextRef(
+                createResourceLink(
+                        baseUrl,
+                        "/authenticationPolicyContracts",
+                        authenticationPolicyContractId)
+        );
+
+        mapping.setContext(ctxt);
+        mapping.setAccessTokenManagerRef(
+                createResourceLink(
+                        baseUrl,
+                        "/oauth/accessTokenManagers",
+                        "WebinarATM")
+        );
+
+        SourceTypeIdKey usernameSource = new SourceTypeIdKey();
+        usernameSource.setType(SourceTypeIdKey.TypeEnum.AUTHENTICATION_POLICY_CONTRACT);
+
+        AttributeFulfillmentValue attrUsername = new AttributeFulfillmentValue();
+        attrUsername.setSource(usernameSource);
+        attrUsername.setValue("subject");
+
+        Map<String, AttributeFulfillmentValue> fulfillmentValueMap = new HashMap<>();
+        fulfillmentValueMap.put("username", attrUsername);
+
+        mapping.setAttributeContractFulfillment(fulfillmentValueMap);
+        mapping.setAttributeSources(new ArrayList<>());
+
+        apiClient.oauthaccessTokenMappingsApi().createMapping(mapping, false);
+    }
+
     private void pfAddOauthClient() throws Exception {
 
         String clientId = propsEnv.getProperty("PF_OAUTH_CLIENT_ID");
@@ -797,45 +677,50 @@ public class Main {
         }
     }
 
-    private void pfConfigurePingAmIntegrationKit() throws IOException {
+    private void pfConfigurePingAmIntegrationKit(String adapterName, String adapterId, String journey, String clientId, String clientSecret) throws IOException {
 
-        IdpAdapters idpAdapters = apiClient.idpadaptersApi().getIdpAdapters(1, 20, null);
-        for (IdpAdapter next : idpAdapters.getItems()) {
-            if ("PingAMIdpAdapterId".equalsIgnoreCase(next.getId())) {
-                return;
-            }
-        }
+        /* Create PingAM IDP Adapter Configuration */
 
         IdpAdapter adapter = new IdpAdapter();
-        adapter.setName("PingAMIdpAdapter");
-        adapter.setId("PingAMIdpAdapterId");
-        adapter.setPluginDescriptorRef(createResourceLink(baseUrl, "/idp/adapters/descriptors", "com.pingidentity.adapters.pingam.PingAMAdapter"));
+        adapter.setName(adapterName);
+        adapter.setId(adapterId);
+        adapter.setPluginDescriptorRef(
+                createResourceLink(baseUrl,
+                        "/idp/adapters/descriptors",
+                        "com.pingidentity.adapters.pingam.PingAMAdapter"));
 
         PluginConfiguration pluginConfiguration = new PluginConfiguration();
 
+        ConfigField fieldSessionIdLocal = new ConfigField();
+        fieldSessionIdLocal.setName("Local Attribute");
+        fieldSessionIdLocal.setValue("sessionId");
+
+        ConfigField fieldSessionIdRemote = new ConfigField();
+        fieldSessionIdRemote.setName("Journey Attribute Mapping");
+        fieldSessionIdRemote.setValue("/sessionUid");
+
+        ConfigRow configRowSession = new ConfigRow();
+        configRowSession.addFieldsItem(fieldSessionIdLocal);
+        configRowSession.addFieldsItem(fieldSessionIdRemote);
+        configRowSession.setDefaultRow(false);
+
+        ConfigField fieldRealmLocal = new ConfigField();
+        fieldRealmLocal.setName("Local Attribute");
+        fieldRealmLocal.setValue("realm");
+
+        ConfigField fieldRealmRemote = new ConfigField();
+        fieldRealmRemote.setName("Journey Attribute Mapping");
+        fieldRealmRemote.setValue("/realm");
+
+        ConfigRow configRowRealm = new ConfigRow();
+        configRowRealm.addFieldsItem(fieldRealmLocal);
+        configRowRealm.addFieldsItem(fieldRealmRemote);
+        configRowRealm.setDefaultRow(false);
+
         ConfigTable configTable = new ConfigTable();
         configTable.setName("Journey Response Mappings (optional)");
-
-        ConfigRow configRowSession = getPingAmAdapterMapping("sessionId", "/sessionUid");
         configTable.addRowsItem(configRowSession);
-
-        ConfigRow configRowRealm = getPingAmAdapterMapping("realm", "/realm");
         configTable.addRowsItem(configRowRealm);
-
-        ConfigRow configRowSessionUsername = getPingAmAdapterMapping("sessionUsername", "/properties/am.protected.sessionUsername");
-        configTable.addRowsItem(configRowSessionUsername);
-
-        ConfigRow configRowRequestedJourney = getPingAmAdapterMapping("requestedJourney", "/properties/am.protected.requestedJourney");
-        configTable.addRowsItem(configRowRequestedJourney);
-
-        String ldapAttributes = propsEnv.getProperty("PINGAM_LDAP_ATTRIBUTE");
-        if(ldapAttributes != null) {
-            String attributes[] = ldapAttributes.split(",");
-            for(String next : attributes) {
-                ConfigRow nextRow = getPingAmAdapterMapping(next, String.format("/properties/am.protected.%s", next));
-                configTable.addRowsItem(nextRow);
-            }
-        }
 
         pluginConfiguration.addTablesItem(configTable);
 
@@ -849,7 +734,7 @@ public class Main {
 
         ConfigField pingAmJourney = new ConfigField();
         pingAmJourney.setName("Journey");
-        pingAmJourney.setValue(propsEnv.getProperty("PINGAM_JOURNEY"));
+        pingAmJourney.setValue(journey);
 
         ConfigField pingAmJourneyCookie = new ConfigField();
         pingAmJourneyCookie.setName("Cookie Name");
@@ -860,6 +745,19 @@ public class Main {
         pluginConfiguration.addFieldsItem(pingAmJourney);
         pluginConfiguration.addFieldsItem(pingAmJourneyCookie);
 
+        if(clientId != null) {
+            ConfigField pingAmClientId = new ConfigField();
+            pingAmClientId.setName("Client ID");
+            pingAmClientId.setValue(clientId);
+            pluginConfiguration.addFieldsItem(pingAmClientId);
+            if(clientSecret != null) {
+                ConfigField pingAmClientSecret = new ConfigField();
+                pingAmClientSecret.setName("Client Secret");
+                pingAmClientSecret.setValue(clientSecret);
+                pluginConfiguration.addFieldsItem(pingAmClientSecret);
+            }
+        }
+
         adapter.setConfiguration(pluginConfiguration);
 
         IdpAdapterAttributeContract idpAdapterAttributeContract = new IdpAdapterAttributeContract();
@@ -868,30 +766,6 @@ public class Main {
         attrUsername.setMasked(false);
         attrUsername.setPseudonym(true);
         idpAdapterAttributeContract.addCoreAttributesItem(attrUsername);
-
-        IdpAdapterAttribute attrSessionUsername = new IdpAdapterAttribute();
-        attrSessionUsername.setName("sessionUsername");
-        attrSessionUsername.setMasked(false);
-        attrSessionUsername.setPseudonym(true);
-        idpAdapterAttributeContract.addExtendedAttributesItem(attrSessionUsername);
-
-        IdpAdapterAttribute attrRequestedJourney = new IdpAdapterAttribute();
-        attrRequestedJourney.setName("requestedJourney");
-        attrRequestedJourney.setMasked(false);
-        attrRequestedJourney.setPseudonym(true);
-        idpAdapterAttributeContract.addExtendedAttributesItem(attrRequestedJourney);
-
-        if(ldapAttributes != null) {
-            String attributes[] = ldapAttributes.split(",");
-            for(String next : attributes) {
-                IdpAdapterAttribute nextAttr = new IdpAdapterAttribute();
-                nextAttr.setName(next);
-                nextAttr.setMasked(false);
-                nextAttr.setPseudonym(true);
-                idpAdapterAttributeContract.addExtendedAttributesItem(nextAttr);
-            }
-        }
-
         idpAdapterAttributeContract.setMaskOgnlValues(false);
 
         adapter.setAttributeContract(idpAdapterAttributeContract);
@@ -912,36 +786,45 @@ public class Main {
 
     }
 
+    // https://docs.pingidentity.com/pingam/8/eval-guide/step-3-deploy-am.html
+    // https://docs.pingidentity.com/pingam/7.5/reference/man-configurator-jar-1.html
     private void pingAmCreateAdminAndConfig() throws Exception {
 
         String basicPath = propsEnv.getProperty("PINGAM_BASE_URL");
         String path = "/config/configurator";
-        List<Header> headers = new ArrayList<>();
 
         List<BasicNameValuePair> payload = new ArrayList<>();
+        payload.add(new BasicNameValuePair("SERVER_URL", propsEnv.getProperty("PINGAM_SERVER_URL")));
+        payload.add(new BasicNameValuePair("DEPLOYMENT_URI", "openam"));
+        payload.add(new BasicNameValuePair("BASE_DIR", "/root/openam")); // the location for logfiles within the docker container
+        payload.add(new BasicNameValuePair("locale", "en_US"));
+        payload.add(new BasicNameValuePair("PLATFORM_LOCALE", "en_US"));
+        payload.add(new BasicNameValuePair("AM_ENC_KEY", propsEnv.getProperty("SSL_PWD")));
         payload.add(new BasicNameValuePair("ADMIN_PWD", propsEnv.getProperty("PINGAM_ADMIN_PASSWORD")));
         payload.add(new BasicNameValuePair("ADMIN_CONFIRM_PWD", propsEnv.getProperty("PINGAM_ADMIN_PASSWORD")));
         payload.add(new BasicNameValuePair("AMLDAPUSERPASSWD", propsEnv.getProperty("PINGAM_ADMIN_PASSWORD")));
-        payload.add(new BasicNameValuePair("AMLDAPUSERPASSWD_CONFIRM", propsEnv.getProperty("PINGAM_ADMIN_PASSWORD")));
-        payload.add(new BasicNameValuePair("BASE_DIR", "/forgerock/am_config"));
-        payload.add(new BasicNameValuePair("DEPLOYMENT_URI", "openam"));
-        payload.add(new BasicNameValuePair("DIRECTORY_JMX_PORT", "1689"));
-        payload.add(new BasicNameValuePair("DS_DIRMGRDN", "cn=Directory Manager"));
-        payload.add(new BasicNameValuePair("DS_DIRMGRPASSWD", propsEnv.getProperty("PINGAM_ADMIN_PASSWORD")));
-        payload.add(new BasicNameValuePair("PLATFORM_LOCALE", "en_US"));
-        payload.add(new BasicNameValuePair("SERVER_URL", basicPath.replaceAll("/openam$", "")));
-        payload.add(new BasicNameValuePair("acceptLicense", "true"));
-        payload.add(new BasicNameValuePair("locale", "en_US"));
-        payload.add(new BasicNameValuePair("ROOT_SUFFIX", "dc=openam,dc=forgerock,dc=org"));
         payload.add(new BasicNameValuePair("COOKIE_DOMAIN", propsEnv.getProperty("PINGAM_COOKIE_DOMAIN")));
+        payload.add(new BasicNameValuePair("acceptLicense", "true"));
+
+        payload.add(new BasicNameValuePair("DATA_STORE", "dirServer"));
         payload.add(new BasicNameValuePair("DIRECTORY_SSL", "SSL"));
-        payload.add(new BasicNameValuePair("DATA_STORE", "embedded"));
+        payload.add(new BasicNameValuePair("DIRECTORY_SERVER", propsEnv.getProperty("HOSTNAME_DS")));
         payload.add(new BasicNameValuePair("DIRECTORY_PORT", "50636"));
         payload.add(new BasicNameValuePair("DIRECTORY_ADMIN_PORT", "4444"));
-        payload.add(new BasicNameValuePair("DIRECTORY_SERVER", "localhost"));
+        payload.add(new BasicNameValuePair("DIRECTORY_JMX_PORT", "1689"));
+        payload.add(new BasicNameValuePair("ROOT_SUFFIX", "ou=am-config")); // ou=am-config ou=identities
+        payload.add(new BasicNameValuePair("DS_DIRMGRDN", "uid=am-config,ou=admins,ou=am-config"));
+        payload.add(new BasicNameValuePair("DS_DIRMGRPASSWD", propsEnv.getProperty("PINGAM_ADMIN_PASSWORD")));
 
-        JSONObject posted = apiHelper.postPingAm(basicPath, path, payload, headers);
-        LOGGER.info(posted.toJSONString());
+        payload.add(new BasicNameValuePair("USERSTORE_TYPE", "LDAPv3ForOpenDS"));
+        payload.add(new BasicNameValuePair("USERSTORE_SSL", "SSL"));
+        payload.add(new BasicNameValuePair("USERSTORE_HOST", propsEnv.getProperty("HOSTNAME_DS")));
+        payload.add(new BasicNameValuePair("USERSTORE_PORT", "50636"));
+        payload.add(new BasicNameValuePair("USERSTORE_SUFFIX", "ou=identities"));
+        payload.add(new BasicNameValuePair("USERSTORE_MGRDN", "uid=am-identity-bind-account,ou=admins,ou=identities"));
+        payload.add(new BasicNameValuePair("USERSTORE_PASSWD", propsEnv.getProperty("PINGAM_ADMIN_PASSWORD")));
+
+        apiHelper.postPingAm(basicPath, path, payload, new ArrayList<>());
     }
 
     private void pingAmConfigureServerDefaults() throws Exception {
@@ -959,8 +842,7 @@ public class Main {
         JSONObject payload = new JSONObject();
         payload.put("amconfig.header.cookie", cookie);
 
-        JSONObject posted = apiHelper.putPingAm(basicPath, path, payload, headers);
-        LOGGER.info(posted.toJSONString());
+        apiHelper.putPingAm(basicPath, path, payload, headers);
     }
 
     private void pingAmConfigureGlobalServices() throws Exception {
@@ -978,8 +860,7 @@ public class Main {
         payload.put("cookieDomains", cookieDomains);
 
         // PUT https://openam.webinar.local:8449/openam/json/global-config/services/platform HTTP/1.1 --> 404, Not Found ???
-        JSONObject posted = apiHelper.putPingAm(basicPath, path, payload, headers);
-        LOGGER.info(posted.toJSONString());
+        apiHelper.putPingAm(basicPath, path, payload, headers);
     }
 
     private void pingAmConfigureDirectory() throws Exception {
@@ -989,53 +870,88 @@ public class Main {
 
         updatePingAmPdTemplate();
 
-        JSONObject posted = apiHelper.putPingAm(basicPath, path, pingAmPdConfigTemplate, new ArrayList<>());
-        LOGGER.info(posted.toJSONString());
+        apiHelper.putPingAm(basicPath, path, pingAmPdConfigTemplate, new ArrayList<>());
+    }
+
+    private void pingAmBackChannelOAuthClient() throws Exception {
+
+        String basicPath = String.format("%s/json", propsEnv.getProperty("PINGAM_BASE_URL"));
+        String path = String.format("/realms/root/realms/%s/realm-config/agents/OAuth2Client/%s", propsEnv.getProperty("PINGAM_REALM"), propsEnv.getProperty("PINGAM_BACK_CHANNEL_AUTH_CLIENT_ID"));
+
+        List<Header> headers = new ArrayList<>();
+        headers.add(new BasicHeader("Accept-API-Version", "resource=1.0"));
+
+        JSONArray grantType = new JSONArray();
+        grantType.add("client_credentials");
+        JSONObject grantTypes = new JSONObject();
+        grantTypes.put("inherited", false);
+        grantTypes.put("value", grantType);
+
+        JSONObject tokenEndpointAuthMethod = new JSONObject();
+        tokenEndpointAuthMethod.put("inherited", false);
+        tokenEndpointAuthMethod.put("value", "client_secret_basic");
+
+        JSONObject advancedOAuth2ClientConfig = new JSONObject();
+        advancedOAuth2ClientConfig.put("tokenEndpointAuthMethod", tokenEndpointAuthMethod);
+        advancedOAuth2ClientConfig.put("grantTypes", grantTypes);
+
+        JSONArray clientName = new JSONArray();
+        clientName.add(propsEnv.getProperty("PINGAM_BACK_CHANNEL_AUTH_CLIENT_NAME"));
+        JSONObject clientNames = new JSONObject();
+        clientNames.put("inherited", false);
+        clientNames.put("value", clientName);
+
+        JSONObject clientType = new JSONObject();
+        clientType.put("inherited", false);
+        clientType.put("value", "confidential");
+
+        JSONArray scope = new JSONArray();
+        scope.add("back_channel_authentication");
+        scope.add("write");
+        JSONObject scopes = new JSONObject();
+        scopes.put("inherited", false);
+        scopes.put("value", scope);
+
+        JSONObject coreOAuth2ClientConfig = new JSONObject();
+        coreOAuth2ClientConfig.put("clientName", clientNames);
+        coreOAuth2ClientConfig.put("clientType", clientType);
+        coreOAuth2ClientConfig.put("userpassword", propsEnv.getProperty("PINGAM_BACK_CHANNEL_AUTH_CLIENT_SECRET"));
+        coreOAuth2ClientConfig.put("scopes", scopes);
+
+        JSONObject payload = new JSONObject();
+        payload.put("advancedOAuth2ClientConfig", advancedOAuth2ClientConfig);
+        payload.put("coreOAuth2ClientConfig", coreOAuth2ClientConfig);
+
+        apiHelper.putPingAm(basicPath, path, payload, headers);
     }
 
     private void pingAmCreateRealm() throws Exception {
-        // https://backstage.forgerock.com/docs/am/7.4/setup-guide/sec-rest-realm-rest.html#rest-api-create-realm
+        // https://docs.pingidentity.com/pingam/8/setup-guide/sec-rest-realm-rest.html#rest-api-create-realm
         String basicPath = String.format("%s/json", propsEnv.getProperty("PINGAM_BASE_URL"));
         String path = "/global-config/realms";
 
         // check if we have created it in the past already
         List<Header> headers = new ArrayList<>();
-        headers.add(new BasicHeader("Accept-API-Version", "resource=1.0, protocol=2.1"));
-        JSONObject existingRealms = apiHelper.getPingAm(basicPath, path + "?_queryFilter=true", headers);
-        boolean isNew = true;
         String pingAmRealm = propsEnv.getProperty("PINGAM_REALM");
-        for (Object next : (JSONArray) existingRealms.get("result")) {
-            if (pingAmRealm.equalsIgnoreCase((String) ((JSONObject) next).get("name"))) {
-                isNew = false;
-                break;
-            }
-        }
-        if (isNew) {
 
-            // add the new realm
-            JSONArray aliases = new JSONArray();
-            aliases.add(pingAmRealm);
-            JSONObject payload = new JSONObject();
-            payload.put("name", pingAmRealm);
-            payload.put("active", true);
-            payload.put("parentPath", "/");
-            payload.put("aliases", aliases);
+        // add the new realm
+        JSONArray aliases = new JSONArray();
+        aliases.add(pingAmRealm);
+        JSONObject payload = new JSONObject();
+        payload.put("name", pingAmRealm);
+        payload.put("active", true);
+        payload.put("parentPath", "/");
+        payload.put("aliases", aliases);
 
-            headers = new ArrayList<>();
-            headers.add(new BasicHeader("Accept-API-Version", "resource=1.0"));
-            JSONObject posted = apiHelper.postPingAm(basicPath, path, payload, headers);
-            LOGGER.info(posted.toJSONString());
+        headers = new ArrayList<>();
+        headers.add(new BasicHeader("Accept-API-Version", "resource=1.0"));
+        apiHelper.postPingAm(basicPath, path, payload, headers);
 
-            // use client-side sessions
-            path = String.format("/realms/root/realms/%s/realm-config/authentication", pingAmRealm);
-            payload = new JSONObject();
-            payload.put("statelessSessionsEnabled", true);
-            JSONObject sessions = apiHelper.putPingAm(basicPath, path, payload, new ArrayList<>());
-            LOGGER.info(sessions.toJSONString());
-
-        } else {
-            LOGGER.info("The realm already exists and will not be created again");
-        }
+        // use client-side sessions
+        path = String.format("/realms/root/realms/%s/realm-config/authentication", pingAmRealm);
+        payload = new JSONObject();
+        payload.put("statelessSessionsEnabled", true);
+        apiHelper.putPingAm(basicPath, path, payload, new ArrayList<>());
 
     }
 
@@ -1051,7 +967,7 @@ public class Main {
         JSONArray loginSuccessUrl = new JSONArray();
         loginSuccessUrl.add("/openam/console");
         JSONObject payload = new JSONObject();
-        payload.put("loginSuccessUrl",loginSuccessUrl);
+        payload.put("loginSuccessUrl", loginSuccessUrl);
         payload.put("usernameGeneratorClass", "com.sun.identity.authentication.spi.DefaultUserIDGenerator");
         payload.put("usernameGeneratorEnabled", true);
         payload.put("loginPostProcessClass", new JSONArray());
@@ -1065,9 +981,9 @@ public class Main {
         userAttributeSessionMapping.add("cn|sessionUsername");  // always available
 
         String ldapAttributes = propsEnv.getProperty("PINGAM_LDAP_ATTRIBUTE");
-        if(ldapAttributes != null) {
+        if (ldapAttributes != null) {
             String attributes[] = ldapAttributes.split(",");
-            for(String next : attributes) {
+            for (String next : attributes) {
                 // ["cn|sessionUsername","mail|email"]
                 whitelist.add(String.format("am.protected.%s", next.trim()));
                 userAttributeSessionMapping.add(String.format("%s|am.protected.%s", next.trim(), next.trim()));
@@ -1075,15 +991,13 @@ public class Main {
         }
         payload.put("userAttributeSessionMapping", userAttributeSessionMapping);
 
-        JSONObject userAttributes = apiHelper.putPingAm(basicPath, path, payload, new ArrayList<>());
-        LOGGER.info(userAttributes.toJSONString());
+        apiHelper.putPingAm(basicPath, path, payload, new ArrayList<>());
 
         // use client-side sessions
         path = String.format("/realms/root/realms/%s/realm-config/authentication", pingAmRealm);
         payload = new JSONObject();
         payload.put("statelessSessionsEnabled", true);
-        JSONObject sessions = apiHelper.putPingAm(basicPath, path, payload, new ArrayList<>());
-        LOGGER.info(sessions.toJSONString());
+        apiHelper.putPingAm(basicPath, path, payload, new ArrayList<>());
 
         // configure a validation service (redirect_uris) to the new realm
         path = String.format("/realms/root/realms/%s/realm-config/services/validation", pingAmRealm);
@@ -1092,8 +1006,7 @@ public class Main {
         destinations.add(String.format("%s/*?*", propsEnv.getProperty("PF_FEDERATION_BASE_URL")));
         payload = new JSONObject();
         payload.put("validGotoDestinations", destinations);
-        JSONObject posted = apiHelper.putPingAm(basicPath, path, payload, new ArrayList<>());
-        LOGGER.info(posted.toJSONString());
+        apiHelper.putPingAm(basicPath, path, payload, new ArrayList<>());
 
         // configure session service lifetimes for the new realm
         path = String.format("/realms/root/realms/%s/realm-config/services/session", pingAmRealm);
@@ -1104,15 +1017,56 @@ public class Main {
         attributes.put("quotaLimit", 1);
         payload = new JSONObject();
         payload.put("dynamic", attributes);
-        posted = apiHelper.putPingAm(basicPath, path, payload, new ArrayList<>());
-        LOGGER.info(posted.toJSONString());
+        apiHelper.putPingAm(basicPath, path, payload, new ArrayList<>());
 
         // add whitelisted session properties service for the new realm
         path = String.format("/realms/root/realms/%s/realm-config/services/amSessionPropertyWhitelist", pingAmRealm);
         payload = new JSONObject();
         payload.put("sessionPropertyWhitelist", whitelist);
-        posted = apiHelper.putPingAm(basicPath, path, payload, new ArrayList<>());
-        LOGGER.info(posted.toJSONString());
+        apiHelper.putPingAm(basicPath, path, payload, new ArrayList<>());
+    }
+
+    private void pingAmOAuth2ProviderService() throws Exception {
+
+        String pingAmRealm = propsEnv.getProperty("PINGAM_REALM");
+
+        String basicPath = String.format("%s/json", propsEnv.getProperty("PINGAM_BASE_URL"));
+
+        // add oauth2 provider service to support back_channel_authentication
+        String path = String.format("/realms/root/realms/%s/realm-config/services/oauth-oidc?_action=create", pingAmRealm);
+        JSONArray supportedScopes = new JSONArray();
+        supportedScopes.add("back_channel_authentication");
+        supportedScopes.add("write");
+        JSONObject advancedOAuth2Config = new JSONObject();
+        advancedOAuth2Config.put("supportedScopes", supportedScopes);
+        advancedOAuth2Config.put("persistentClaims", new JSONArray());
+        advancedOAuth2Config.put("passwordGrantAuthService", "[Empty]");
+        JSONObject advancedOIDCConfig = new JSONObject();
+        advancedOIDCConfig.put("authorisedOpenIdConnectSSOClients", new JSONArray());
+        JSONObject pluginsConfig = new JSONObject();
+        pluginsConfig.put("oidcClaimsClass", "");
+        pluginsConfig.put("accessTokenModifierClass", "");
+        JSONObject payload = new JSONObject();
+        payload.put("advancedOAuth2Config", advancedOAuth2Config);
+        payload.put("advancedOIDCConfig", advancedOIDCConfig);
+        payload.put("pluginsConfig", pluginsConfig);
+        List<Header> headers = new ArrayList<>();
+        headers.add(new BasicHeader("Accept-API-Version", "resource=1.0"));
+        apiHelper.postPingAm(basicPath, path, payload, headers);
+
+        // add base url service
+        path = String.format("/realms/root/realms/%s/realm-config/services/baseurl?_action=create", pingAmRealm);
+        JSONObject _type = new JSONObject();
+        advancedOAuth2Config.put("_id", "baseurl");
+        advancedOAuth2Config.put("name", "Base URL Source");
+        advancedOAuth2Config.put("collection", false);
+        payload = new JSONObject();
+        payload.put("source", "FIXED_VALUE");
+        payload.put("fixedValue", propsEnv.getProperty("PINGAM_SERVER_URL"));
+        payload.put("contextPath", "/openam");
+        payload.put("_id", "");
+        payload.put("_type", _type);
+        apiHelper.postPingAm(basicPath, path, payload, headers);
     }
 
     private void pingAmAddForgeRockAuthenticatorPushService() throws Exception {
@@ -1123,18 +1077,12 @@ public class Main {
 
         String path = String.format("/realms/root/realms/%s/realm-config/services/authenticatorPushService", pingAmRealm);
 
-        JSONObject pushService = apiHelper.getPingAm(basicPath, path, new ArrayList<>());
-        if (pushService.get("code") != null && 404 == (Long) pushService.get("code")) {
-            JSONObject payload = new JSONObject();
-            payload.put("authenticatorPushDeviceSettingsEncryptionKeystorePrivateKeyPassword", "changeit");
-            payload.put("authenticatorPushDeviceSettingsEncryptionKeystorePassword", "changeit");
-            payload.put("authenticatorPushDeviceSettingsEncryptionKeystoreKeyPairAlias", "WebinarPushKey");
+        JSONObject payload = new JSONObject();
+        payload.put("authenticatorPushDeviceSettingsEncryptionKeystorePrivateKeyPassword", "changeit");
+        payload.put("authenticatorPushDeviceSettingsEncryptionKeystorePassword", "changeit");
+        payload.put("authenticatorPushDeviceSettingsEncryptionKeystoreKeyPairAlias", "WebinarPushKey");
 
-            apiHelper.postPingAm(basicPath, path, payload, new ArrayList<>());
-            LOGGER.info("Push service created");
-        } else {
-            LOGGER.info("Push service already exists");
-        }
+        apiHelper.postPingAm(basicPath, path, payload, new ArrayList<>());
     }
 
     private void pingAmAddForgeRockAuthenticatorOAthService() throws Exception {
@@ -1145,16 +1093,10 @@ public class Main {
 
         String path = String.format("/realms/root/realms/%s/realm-config/services/authenticatorOathService", pingAmRealm);
 
-        JSONObject oauthServices = apiHelper.getPingAm(basicPath, path, new ArrayList<>());
-        if (oauthServices.get("code") != null && 404 == (Long) oauthServices.get("code")) {
-            JSONObject payload = new JSONObject();
-            payload.put("authenticatorOATHDeviceSettingsEncryptionKeystorePrivateKeyPassword", "changeit");
-            payload.put("authenticatorOATHDeviceSettingsEncryptionKeystorePassword", "changeit");
-            apiHelper.postPingAm(basicPath, String.format("%s?_action=create", path), payload, new ArrayList<>());
-            LOGGER.info("OAuth service created");
-        } else {
-            LOGGER.info("OAuth service already exists");
-        }
+        JSONObject payload = new JSONObject();
+        payload.put("authenticatorOATHDeviceSettingsEncryptionKeystorePrivateKeyPassword", "changeit");
+        payload.put("authenticatorOATHDeviceSettingsEncryptionKeystorePassword", "changeit");
+        apiHelper.postPingAm(basicPath, String.format("%s?_action=create", path), payload, new ArrayList<>());
     }
 
     private void pingAmAddSNSPushService() throws Exception {
@@ -1168,18 +1110,12 @@ public class Main {
 
             String path = String.format("/realms/root/realms/%s/realm-config/services/pushNotification", pingAmRealm);
 
-            JSONObject pushService = apiHelper.getPingAm(basicPath, path, new ArrayList<>());
-            if (pushService.get("code") != null && 404 == (Long) pushService.get("code")) {
-                JSONObject payload = new JSONObject();
-                payload.put("accessKey", propsEnv.getProperty("SNS_ACCESS_KEY_ID"));
-                payload.put("secret", propsEnv.getProperty("SNS_ACCESS_KEY_SECRET"));
-                payload.put("googleEndpoint", propsEnv.getProperty("SNS_ENDPOINT_GCM"));
-                payload.put("appleEndpoint", propsEnv.getProperty("SNS_ENDPOINT_APNS"));
-                apiHelper.postPingAm(basicPath, String.format("%s?_action=create", path), payload, new ArrayList<>());
-                LOGGER.info("Push service created");
-            } else {
-                LOGGER.info("Push service already exists");
-            }
+            JSONObject payload = new JSONObject();
+            payload.put("accessKey", propsEnv.getProperty("SNS_ACCESS_KEY_ID"));
+            payload.put("secret", propsEnv.getProperty("SNS_ACCESS_KEY_SECRET"));
+            payload.put("googleEndpoint", propsEnv.getProperty("SNS_ENDPOINT_GCM"));
+            payload.put("appleEndpoint", propsEnv.getProperty("SNS_ENDPOINT_APNS"));
+            apiHelper.postPingAm(basicPath, String.format("%s?_action=create", path), payload, new ArrayList<>());
         }
     }
 
@@ -1191,17 +1127,11 @@ public class Main {
 
         String path = String.format("/realms/root/realms/%s/realm-config/services/authenticatorWebAuthnService", pingAmRealm);
 
-        JSONObject pushService = apiHelper.getPingAm(basicPath, path, new ArrayList<>());
-        if (pushService.get("code") != null && 404 == (Long) pushService.get("code")) {
-            JSONObject payload = new JSONObject();
-            payload.put("authenticatorWebAuthnDeviceSettingsEncryptionKeystorePassword", "changeit");
-            payload.put("authenticatorWebAuthnDeviceSettingsEncryptionKeystorePrivateKeyPassword", "changeit");
-            payload.put("authenticatorWebAuthnDeviceSettingsEncryptionKeystoreKeyPairAlias", "WebinarPushKey");
-            apiHelper.postPingAm(basicPath, String.format("%s?_action=create", path), payload, new ArrayList<>());
-            LOGGER.info("WebAuthN service created");
-        } else {
-            LOGGER.info("WebAuthN service already exists");
-        }
+        JSONObject payload = new JSONObject();
+        payload.put("authenticatorWebAuthnDeviceSettingsEncryptionKeystorePassword", "changeit");
+        payload.put("authenticatorWebAuthnDeviceSettingsEncryptionKeystorePrivateKeyPassword", "changeit");
+        payload.put("authenticatorWebAuthnDeviceSettingsEncryptionKeystoreKeyPairAlias", "WebinarPushKey");
+        apiHelper.postPingAm(basicPath, String.format("%s?_action=create", path), payload, new ArrayList<>());
     }
 
     private void updatePingAmPdTemplate() {
@@ -1225,16 +1155,16 @@ public class Main {
 
         List<Header> headers = new ArrayList<>();
         headers.add(new BasicHeader("Accept-APi-Version", "resource=1.1"));
-        JSONObject scripts = apiHelper.getPingAm(basicPath, "/scripts?_queryFilter=true",headers);
-        for(Object next : (JSONArray)scripts.get("result")) {
-            if( "WebinarSetSessionProps".equalsIgnoreCase((String)((JSONObject)next).get("name"))) {
-                JSONObject script = (JSONObject)next;
+        JSONObject scripts = apiHelper.getPingAm(basicPath, "/scripts?_queryFilter=true", headers);
+        for (Object next : (JSONArray) scripts.get("result")) {
+            if ("WebinarSetSessionProps".equalsIgnoreCase((String) ((JSONObject) next).get("name"))) {
+                JSONObject script = (JSONObject) next;
                 String ldapAttributes = propsEnv.getProperty("PINGAM_LDAP_ATTRIBUTE");
-                if(ldapAttributes != null) {
+                if (ldapAttributes != null) {
                     String attributes[] = ldapAttributes.split(",");
                     StringBuilder placeHolder1 = new StringBuilder();
                     StringBuilder placeHolder2 = new StringBuilder();
-                    for(String nextAttr : attributes) {
+                    for (String nextAttr : attributes) {
                         placeHolder1.append(String.format("var %s = idRepository.getAttribute(userId, \"%s\").iterator().next();\n", nextAttr, nextAttr));
                         placeHolder2.append(String.format(".putSessionProperty(\"am.protected.%s\", %s)", nextAttr, nextAttr));
                     }
@@ -1242,28 +1172,16 @@ public class Main {
                     updatedScript = updatedScript.replaceAll("@@placeholder2@@", placeHolder2.toString());
                     script.replace("script", Base64.getEncoder().encodeToString(updatedScript.getBytes()));
 
-                    String scriptId = (String)script.get("_id");
+                    String scriptId = (String) script.get("_id");
                     headers.add(new BasicHeader("If-Match", "*"));
 
                     apiHelper.putPingAm(basicPath, String.format("/scripts/%s", scriptId), script, headers);
+
+                    LOGGER.info("The script node was successfully updated");
                 }
                 break;
             }
         }
-    }
-
-    private ConfigRow getPingAmAdapterMapping(String localValue, String remoteValue) {
-        ConfigField localField = new ConfigField();
-        localField.setName("Local Attribute");
-        localField.setValue(localValue);
-        ConfigField remoteField = new ConfigField();
-        remoteField.setName("Journey Attribute Mapping");
-        remoteField.setValue(remoteValue);
-        ConfigRow row = new ConfigRow();
-        row.addFieldsItem(localField);
-        row.addFieldsItem(remoteField);
-        row.setDefaultRow(false);
-        return row;
     }
 
     private ResourceLink createResourceLink(String baseUrl, String path, String id) {

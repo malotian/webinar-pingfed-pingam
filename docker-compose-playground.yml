@@ -1,7 +1,7 @@
 version: '3.4'
 services:
 
-  # https://playground.webinar.local:8448/OAuthPlayground
+  # https://playground.webinar.local:8448
   oauthplayground:
     image: webinar/oauth-playground:latest
     container_name: playgroundwebinarlocal

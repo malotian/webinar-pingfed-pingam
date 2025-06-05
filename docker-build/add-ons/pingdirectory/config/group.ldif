@@ -1,0 +1,22 @@
+dn: ou=groups,dc=pingdirectory,dc=local
+objectclass: top
+objectclass: organizationalunit
+ou: groups
+
+dn: cn=Webinar,ou=groups,dc=pingdirectory,dc=local
+objectclass: top
+objectclass: groupOfUniqueNames
+cn: Webinar
+ou: groups
+uniquemember: uid=admin,ou=People,dc=pingdirectory,dc=local
+uniquemember: uid=user.0,ou=People,dc=pingdirectory,dc=local
+uniquemember: uid=user.1,ou=People,dc=pingdirectory,dc=local
+uniquemember: uid=user.2,ou=People,dc=pingdirectory,dc=local
+uniquemember: uid=user.3,ou=People,dc=pingdirectory,dc=local
+uniquemember: uid=user.4,ou=People,dc=pingdirectory,dc=local
+uniquemember: uid=user.5,ou=People,dc=pingdirectory,dc=local
+uniquemember: uid=user.6,ou=People,dc=pingdirectory,dc=local
+uniquemember: uid=user.7,ou=People,dc=pingdirectory,dc=local
+uniquemember: uid=user.8,ou=People,dc=pingdirectory,dc=local
+uniquemember: uid=user.9,ou=People,dc=pingdirectory,dc=local
+uniquemember: uid=user.10,ou=People,dc=pingdirectory,dc=local

@@ -2,7 +2,7 @@
 
 This project is an example setup that leverages PingFederate, PingAM and PingDirectory to take advantage of the orchestration features that PingAM provides.
 
-The target audiences for this setup are administrators and developers who want to understand more about this configuration and run it on-prem.
+The target audiences for this setup are administrators and developers who want to understand more about this configuration and run it on-prem or in a private cloud.
 
 All products are configured via APIs call, no manual tasks are needed. This makes it very easy to get started and have the setup up and running after just a few minutes.
 
@@ -25,35 +25,32 @@ This webinar uses the following products and integration kits:
 
 **Products:**
 
-- PingFederate 12.1
-- PingDirectory 10.1
-- PingAM 7.5 (ForgeRock Intelligent Access 7.5)
-
-**Integration Kits:**
-
-- PingAM Integration Kit 1.0
+- PingFederate 12.2
+- PingDirectory 10.2
+- PingAM 8.0.1
+- PingDS 8.0
 
 Download those products, place them here: **./products/...** and follow the **README.md** instructions per product.
 
 Licenses for PingFederate and PingDirectory should be requested at your CSM.
 
-Download the integration kit:
+Additionally, download the PingAM integration kit:
 
 - **https://www.pingidentity.com/en/resources/downloads/pingfederate.html**
 - tab **Add-Ons**
 
 Unzip the file and place the extracted jar-file at this location:
 
-- **docker-build/add-ons/pingfederate/pf-pingam-adapter-1.0.jar**
+- **docker-build/add-ons/pingfederate/pf-pingam-adapter-1.2.jar**
 
 ## Prepare your environment
 
 The setup uses these technologies throughout:
 
 - Docker
-- Make (this is just for convenience)
-- Maven
 - Java11
+- Maven
+- Make (this is just for convenience)
 
 **Note:** further down are instructions on how to build this setup if Maven is not available!
 
@@ -62,9 +59,9 @@ The setup uses these technologies throughout:
 To simulate a more realistic environment update the local hosts file:
 
 - `sudo vi /etc/hosts`
-  - add **{your-current-ip-address} pf.webinar.local pd.webinar.local openam.webinar.local playground.webinar.local**
+  - add **{your-current-ip-address} pf.webinar.local pd.webinar.local openam.webinar.local ds.webinar.local playground.webinar.local**
     - replace **{your-current-ip-address}** with the current IP address of your computer. Do NOT use *localhost* or *127.0.0.1*
-    - example: **192.168.0.12 pf.webinar.local pd.webinar.local openam.webinar.local playground.webinar.local**
+    - example: **192.168.0.12 pf.webinar.local ...**
 
 ### Install Frodo
 
@@ -72,19 +69,23 @@ In order to use example PingAM trees/ journeys install **Frodo-cli**:
 
 - `brew tap rockcarver/frodo-cli`
 - `brew install frodo-cli`
+- `frodo conn add -k https://openam.webinar.local:8449/openam amAdmin 'Password1'`
+  - run this command once only. It adds a connection for frodo and saves it here: **~/.frodo/Connections.json**
+
+    **Tip:** To learn more about this tool, check the **Links** section further down.
 
 ### Create initial configuration files and private/public keys
 
 In the current directory, open a terminal and run these commands:
 
 - `sh initialize-dev-environment.sh`
-  - creates an **.env** file for docker and as input for **initialize-dev-tls-keypair.sh**
+  - creates an **.env** file for docker and is used as input for **initialize-dev-tls-keypair.sh**
   - it also contains the configuration details for this setup
-  - running this script again pushes the file to **dev/.env.bak**
+  - running this script again pushes generated files to **dev/.env.bak**
   - the first time execution may display an error *mv: rename .env to dev/.env.bak: No such file or directory* which can be ignored
 - `sh initialize-dev-tls-keypair.sh`
   - generates a keystore for this setup. Find generated files in **./dev**
-  - the same keystore is used by PingFederate, PingAM and PingDirectory
+- the same keystore is used by PingFederate, PingAM, PingDirectory and PingDS
   - the first time execution may display an error *mv: rename ./dev/tlskey.p12 to ./dev/tlskey.p12.bak: No such file or directory* which can be ignored
 
 ## Build the setup
@@ -102,11 +103,15 @@ The only exceptions are these:
 
 ### Compile code and build docker images
 
+- `make build_prereq`
+  - this will create the docker images **webinar/tomcat:10, webinar/openjdk:17**
+  - these are used later
+  - this has to be executed only once
+
 **Option 1:** Java and Maven are available:
 
 - `make build_all`
   - builds all java code and docker images. Open the file for more details if desired
-  - run this command whenever the java code or the dockerfiles have been updated
 
 **Option 2:** Maven is not available:
 
@@ -118,6 +123,11 @@ The only exceptions are these:
 
 **Tip:** Wherever **make** is used, have a look into **Makefile** to learn more about the details of that task.
 
+As temporary docker images have been built, remove them by running this:
+
+- `docker rmi $(docker images -f "dangling=true" -q)`
+- `docker builder prune`
+
 ## Get the system up and running
 
 These are the steps to launch and use the setup. Repeat these steps after stopping the setup.
@@ -126,7 +136,7 @@ All previous instructions are required once only and may be repeated if java cod
 
 ### Launch the setup
 
-The whole setup is based on docker images and is launched using this command:
+All docker images have been built and are ready to be launched for the first time:
 
 - `docker compose up`
   - view the file **docker-compose.yml** for browser admin URLs for the different products
@@ -135,27 +145,17 @@ The whole setup is based on docker images and is launched using this command:
 
 At this point PingFederate and PingAM are basically empty containers (PingDirectory already contains example users and is ready to go).
 
-Configure the products:
+Execute the next commands whenever the setup was restarted:
 
 - `make configure_setup`
-  - imports LDIF files into PingDirectory
-  - configures PingFederate and PingAM
-
-Import example PingAM journeys:
-
-- `frodo conn add -k https://openam.webinar.local:8449/openam amAdmin 'Password1'`
-  - this adds a connection to frodo's configuration file which is stored here: **~/.frodo/Connections.json**
-  - run this only the first time or after Frodo got updated
-
+  - this configures all products
 - `make import_journeys`
-  - imports example journeys into PingAM
+  - this imports 5 example journeys into PingAM
 
-**Tip:** to learn how PingFederate and PingAM are configured, review the **main** method in **src/main/java/com/pingfederate/webinar/Main.java**
-
-All imported journeys names start with **Webinar** and can be found here:
+All journeys can be found here after they have been imported and their names start with **Webinar**:
 
 - https://openam.webinar.local:8449/openam
-- realm **webinar**
+- realm **alpha**  // the realm you configured in .env (PINGAM_REALM)
   - Authentication
     - Trees
 
@@ -192,11 +192,11 @@ After successful authentication the user gets redirected back to PingFederate an
 
 Even without an oauth client it is possible to try out a journey. However, this does not use PingFederate.
 
-Open a browser:
+Open a browser to invoke a journey without involving PingFederate:
 
 - **https://openam.webinar.local:8449/openam/XUI/?realm=/webinar&service=WebinarJourney#login**
 
-Replace **...=WebinarJourney** with another journey. Find the name in **Makefile** or in the PingAM UI.
+Replace **.../webinar** with your realm and **...=WebinarJourney** with another journey. Find available journey names in **Makefile** or in the PingAM UI.
 
 The successful journey ends with a view of the users profile.
 
@@ -221,23 +221,27 @@ The next time a user authenticates, the OAth Push journey will be executed:
 
 If you wonder what docker images have been built throughout this setup, run this command:
 
-- `docker images | grep webinar`
+- `docker images | grep webinar`  // the result includes the images IDs
+- `docker rmi {image_id} {image_id} ...`  // use this to remove the images
 
-If the build process fails, due to missing resources or space limitations, try these:
+If the build process fails, due to missing resources, try these:
 
 - `docker rmi $(docker images -f "dangling=true" -q)`
 - `docker builder prune`
+
+If nothing helps, and you run into space limitations you cannot solve:
+- `docker system prune --all --force --volumes`
+  - - WATCH OUT, this will blow away ALL images on your machine!
 
 If you want to connect into a running image, use this:
 
 - `docker exec -it {container_name} bash`
   - **{container_name}** -- see **docker-compose.yml**
 
-To view log files in OpenAM:
+The default directory for log files in PingAM
 
-- `docker exec -it openamwebinarlocal bash`  // the prompt is now within the running container
-- `cd /forgerock/am_config/var/debug`
-- `ls -la`  // several log files are listed
+- `docker exec -it openamwebinarlocal bash`  // this takes you into the running container
+- `/root/openam/var/`
 
 To view log files in PingFederate:
 
@@ -249,6 +253,7 @@ When done with the evaluation of this setup, it could be useful to remove the im
 
 - `docker rmi $(docker images --filter=reference="webinar/*" -q)`
   - any image tagged as **webinar/** will be deleted
+
 
 ## Links
 
@@ -275,6 +280,11 @@ When done with the evaluation of this setup, it could be useful to remove the im
   - [@PingIdentityTV](https://www.youtube.com/@PingIdentityTV/videos)
 - Webinar: This setup was used during a webinar and can be found here:
   - [https://www.pingidentity.com/en/company/upcoming-events/webinars/details/commId/620098.html](https://www.pingidentity.com/en/company/upcoming-events/webinars/details/commId/620098.html)
+
+# Known issues
+
+- sometimes (completely random as far as I am concerned) running `make import_journeys` fails. Wait 5-10 minutes and try again
+- when images startup and PingDirectory or PingDS warn about limited resources (disk space), free up space by running commands as shown further up, stop the setup and launch again
 
 # DISCLAIMER
 
