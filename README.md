@@ -70,10 +70,8 @@ In order to use example PingAM trees/ journeys install **Frodo-cli**:
 
 - `brew tap rockcarver/frodo-cli`
 - `brew install frodo-cli`
-- `frodo conn add -k https://openam.webinar.local:8449/openam amAdmin 'Password1'`
-  - run this command once only. It adds a connection for frodo and saves it here: **~/.frodo/Connections.json**
 
-    **Tip:** To learn more about this tool, check the **Links** section further down.
+**Tip:** To learn more about this tool, check the **Links** section further down.
 
 ### Create initial configuration files and private/public keys
 
@@ -140,23 +138,31 @@ All previous instructions are required once only and may be repeated if java cod
 All docker images have been built and are ready to be launched for the first time:
 
 - `docker compose up`
-  - view the file **docker-compose.yml** for browser admin URLs for the different products
+  - view the file **docker-compose.yml** for browser admin URLs  and username/ passwords for the different products
 
 ### Configure the running setup
 
 At this point PingFederate and PingAM are basically empty containers (PingDirectory already contains example users and is ready to go).
 
-Execute the next commands whenever the setup was restarted:
+Execute the next command whenever the setup was restarted:
 
 - `make configure_setup`
   - this configures all products
+
+Execute this once:
+
+- `frodo conn add -k https://openam.webinar.local:8449/openam amAdmin 'Password1'`
+  - It adds a connection for frodo and saves it here: **~/.frodo/Connections.json**
+
+Execute the next command whenever the setup was restarted:
+
 - `make import_journeys`
   - this imports 5 example journeys into PingAM
 
 All journeys can be found here after they have been imported and their names start with **Webinar**:
 
 - https://openam.webinar.local:8449/openam
-- realm **alpha**  // the realm you configured in .env (PINGAM_REALM)
+- realm **webinar**  // the realm you configured in .env (PINGAM_REALM)
   - Authentication
     - Trees
 
