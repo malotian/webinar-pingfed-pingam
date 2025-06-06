@@ -23,7 +23,7 @@ RUN /opt/pingdirectory/setup --acceptLicense \
                                      --licenseKeyFile /opt/pingdirectory/licence.lic \
                                      --baseDN dc=pingdirectory,dc=local \
                                      --localHostName `echo $local_hostname | sed -e "s/HOSTNAME_PD=//g"` --ldapPort 389 --skipHostnameCheck \
-                                     --rootUserDN "cn=administrator" --rootUserPassword password \
+                                     --rootUserDN "cn=administrator" --rootUserPassword Password1 \
                                      --maxHeapSize 768m --primeDB --ldapsPort 636 --httpsPort 9443 \
                                      --instanceName pdwebinarlocal --location office \
                                      --optionCacheDirectory /opt/pingdirectory/option-cache \

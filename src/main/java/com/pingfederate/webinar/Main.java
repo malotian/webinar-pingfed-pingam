@@ -1140,7 +1140,7 @@ public class Main {
         ((JSONArray) ldapsettings.get("sun-idrepo-ldapv3-config-ldap-server")).add("pd.webinar.local:389");
         ldapsettings.replace("sun-idrepo-ldapv3-config-organization_name", "dc=pingdirectory,dc=local");
         ldapsettings.replace("sun-idrepo-ldapv3-config-authid", "cn=administrator");
-        ldapsettings.replace("sun-idrepo-ldapv3-config-authpw", "password");
+        ldapsettings.replace("sun-idrepo-ldapv3-config-authpw", "Password1");
 
         JSONObject persistentsearch = (JSONObject) pingAmPdConfigTemplate.get("persistentsearch");
         persistentsearch.replace("sun-idrepo-ldapv3-config-psearchbase", "dc=pingdirectory,dc=local");

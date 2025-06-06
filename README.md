@@ -148,11 +148,13 @@ Execute the next command whenever the setup was restarted:
 
 - `make configure_setup`
   - this configures all products
+  - run this in a separate terminal
 
 Execute this once:
 
 - `frodo conn add -k https://openam.webinar.local:8449/openam amAdmin 'Password1'`
   - It adds a connection for frodo and saves it here: **~/.frodo/Connections.json**
+  - run `~/.frodo/Connections.json` to check if you already have an entry
 
 Execute the next command whenever the setup was restarted:
 

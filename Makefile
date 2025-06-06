@@ -27,6 +27,7 @@ build_docker_ds:
 	docker build --no-cache --tag webinar/ds:latest \
 	--build-arg version=DS-8.0.0.zip \
 	--build-arg deploymentid=$(shell cat .env | grep DEPLOYMENT_ID | sed -e "s/DEPLOYMENT_ID=//g") \
+	--build-arg deploymentpwd=$(shell cat .env | grep DEPLOYMENT_PASSWORD | sed -e "s/DEPLOYMENT_PASSWORD=//g") \
 	--build-arg hostname=$(shell cat .env | grep HOSTNAME_DS | sed -e "s/HOSTNAME_DS=//g") \
 	--build-arg sslpwd=$(shell cat .env | grep SSL_PWD | sed -e "s/SSL_PWD=//g") \
 	--build-arg truststorepwd=changeit \

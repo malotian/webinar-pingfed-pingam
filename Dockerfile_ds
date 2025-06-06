@@ -2,12 +2,14 @@ FROM webinar/openjdk:17
 
 ARG version
 ARG deploymentid
+ARG deploymentpwd
 ARG hostname
 ARG sslpwd
 ARG truststorepwd
 
 ENV build_version $version
 ENV deployment_id $deploymentid
+ENV deployment_pwd $deploymentpwd
 ENV local_hostname $hostname
 ENV ssl_pwd $sslpwd
 ENV truststore_pwd $truststorepwd
@@ -21,6 +23,8 @@ RUN rm /tmp/opendj.zip
 
 COPY dev/tlskey.p12 /opt/ssl/tlskey.p12
 RUN chmod 644 /opt/ssl/tlskey.p12
+
+#RUN /opt/opendj/bin/dskeymgr create-deployment-id --deploymentIdPassword $deploymentid > DEPLOYMENT_PASSWORD
 
 # More info on setup:
 # - https://backstage.forgerock.com/docs/ds/8/install-guide/profile-am-config.html
@@ -38,7 +42,7 @@ RUN chmod 644 /opt/ssl/tlskey.p12
 RUN /opt/opendj/setup \
     --instancePath /opt/opendj \
     --deploymentId $deployment_id \
-    --deploymentIdPassword $ssl_pwd \
+    --deploymentIdPassword $deployment_pwd \
     --hostname $local_hostname \
     --rootUserDN uid=admin \
     --rootUserPassword Password1 \
