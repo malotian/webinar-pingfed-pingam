@@ -1,0 +1,397 @@
+{
+  "meta": {
+    "origin": "https://openam-staplesciam-use4-dev.id.forgerock.io/platform/?realm=alpha#/journeys",
+    "exportedBy": "harjindersingh.dhanjal@staples.com",
+    "exportDate": "2025-06-13T21:22:59.406Z",
+    "exportTool": "platform-admin ui tree export",
+    "exportToolVersion": "1.0",
+    "treesSelectedForExport": [
+      "__staples_a_kosmos_email_test"
+    ],
+    "innerTreesIncluded": []
+  },
+  "trees": {
+    "__staples_a_kosmos_email_test": {
+      "tree": {
+        "_id": "__staples_a_kosmos_email_test",
+        "_rev": "1227134819",
+        "identityResource": "managed/alpha_user",
+        "uiConfig": {
+          "categories": "[\"Authentication\"]"
+        },
+        "entryNodeId": "fb3f7bac-b6c8-4234-aaec-b1b2876e6117",
+        "innerTreeOnly": false,
+        "nodes": {
+          "1e662f56-cc6e-4dda-8ecd-b01890def009": {
+            "x": 786,
+            "y": 136.515625,
+            "connections": {
+              "false": "f1308559-6606-469a-996a-795ee572fa8d",
+              "true": "642576cb-ec48-41d2-9730-97c14895bae2"
+            },
+            "nodeType": "ScriptedDecisionNode",
+            "displayName": "Verify Magic Link"
+          },
+          "519d565d-6b17-41e9-a903-8bb7858b6724": {
+            "x": 243,
+            "y": 373.6125030517578,
+            "connections": {
+              "false": "c428c553-be1f-4d22-b072-9d02a6e806c1",
+              "true": "c51ea46d-33b8-44b7-8652-5d23e74ad84b"
+            },
+            "nodeType": "IdentifyExistingUserNode",
+            "displayName": "Identify Existing User"
+          },
+          "e68d8532-414a-474e-a5e6-00e4acf83305": {
+            "x": 485,
+            "y": 188.6125030517578,
+            "connections": {
+              "false": "422844ca-a4df-403d-a99f-745a1c2dfd14",
+              "true": "393f491b-6c95-4730-9154-929bea04a2ab"
+            },
+            "nodeType": "ScriptedDecisionNode",
+            "displayName": "Trigger Magic Link"
+          },
+          "fb3f7bac-b6c8-4234-aaec-b1b2876e6117": {
+            "x": 164,
+            "y": 129.6125030517578,
+            "connections": {
+              "outcome": "0ffccab9-c997-4b10-895e-ed4400cb97d5"
+            },
+            "nodeType": "SetStateNode",
+            "displayName": "Set State"
+          },
+          "f1308559-6606-469a-996a-795ee572fa8d": {
+            "x": null,
+            "y": null,
+            "connections": {
+              "outcome": "e301438c-0bd0-429c-ab0c-66126501069a"
+            },
+            "nodeType": "DebugNode",
+            "displayName": "Debug Node"
+          },
+          "642576cb-ec48-41d2-9730-97c14895bae2": {
+            "x": null,
+            "y": null,
+            "connections": {
+              "outcome": "70e691a5-1e33-4ac3-a356-e7b6d60d92e0"
+            },
+            "nodeType": "DebugNode",
+            "displayName": "Debug Node"
+          },
+          "c428c553-be1f-4d22-b072-9d02a6e806c1": {
+            "x": null,
+            "y": null,
+            "connections": {
+              "outcome": "e301438c-0bd0-429c-ab0c-66126501069a"
+            },
+            "nodeType": "DebugNode",
+            "displayName": "Debug Node"
+          },
+          "c51ea46d-33b8-44b7-8652-5d23e74ad84b": {
+            "x": null,
+            "y": null,
+            "connections": {
+              "outcome": "e68d8532-414a-474e-a5e6-00e4acf83305"
+            },
+            "nodeType": "DebugNode",
+            "displayName": "Debug Node"
+          },
+          "422844ca-a4df-403d-a99f-745a1c2dfd14": {
+            "x": null,
+            "y": null,
+            "connections": {
+              "outcome": "e301438c-0bd0-429c-ab0c-66126501069a"
+            },
+            "nodeType": "DebugNode",
+            "displayName": "Debug Node"
+          },
+          "393f491b-6c95-4730-9154-929bea04a2ab": {
+            "x": null,
+            "y": null,
+            "connections": {
+              "outcome": "1e662f56-cc6e-4dda-8ecd-b01890def009"
+            },
+            "nodeType": "DebugNode",
+            "displayName": "Debug Node"
+          },
+          "0ffccab9-c997-4b10-895e-ed4400cb97d5": {
+            "x": null,
+            "y": null,
+            "connections": {
+              "outcome": "519d565d-6b17-41e9-a903-8bb7858b6724"
+            },
+            "nodeType": "DebugNode",
+            "displayName": "Debug Node"
+          }
+        },
+        "staticNodes": {
+          "startNode": {
+            "x": 50,
+            "y": 250
+          },
+          "70e691a5-1e33-4ac3-a356-e7b6d60d92e0": {
+            "x": 1171,
+            "y": 145
+          },
+          "e301438c-0bd0-429c-ab0c-66126501069a": {
+            "x": 1306,
+            "y": 491
+          }
+        },
+        "mustRun": false,
+        "enabled": true
+      },
+      "nodes": {
+        "1e662f56-cc6e-4dda-8ecd-b01890def009": {
+          "_id": "1e662f56-cc6e-4dda-8ecd-b01890def009",
+          "_rev": "-916188473",
+          "script": "0ab5d789-c92d-4730-ab55-dd9b772977b5",
+          "outcomes": [
+            "true",
+            "false"
+          ],
+          "outputs": [
+            "*"
+          ],
+          "inputs": [
+            "*"
+          ],
+          "_type": {
+            "_id": "ScriptedDecisionNode",
+            "name": "Scripted Decision",
+            "collection": true
+          },
+          "_outcomes": [
+            {
+              "id": "true",
+              "displayName": "true"
+            },
+            {
+              "id": "false",
+              "displayName": "false"
+            }
+          ]
+        },
+        "519d565d-6b17-41e9-a903-8bb7858b6724": {
+          "_id": "519d565d-6b17-41e9-a903-8bb7858b6724",
+          "_rev": "69126479",
+          "identityAttribute": "mail",
+          "identifier": "userName",
+          "_type": {
+            "_id": "IdentifyExistingUserNode",
+            "name": "Identify Existing User",
+            "collection": true
+          },
+          "_outcomes": [
+            {
+              "id": "true",
+              "displayName": "True"
+            },
+            {
+              "id": "false",
+              "displayName": "False"
+            }
+          ]
+        },
+        "e68d8532-414a-474e-a5e6-00e4acf83305": {
+          "_id": "e68d8532-414a-474e-a5e6-00e4acf83305",
+          "_rev": "-1480054349",
+          "script": "cfa4194f-2e30-42d7-976e-757949b29e13",
+          "outcomes": [
+            "true",
+            "false"
+          ],
+          "outputs": [
+            "*"
+          ],
+          "inputs": [
+            "*"
+          ],
+          "_type": {
+            "_id": "ScriptedDecisionNode",
+            "name": "Scripted Decision",
+            "collection": true
+          },
+          "_outcomes": [
+            {
+              "id": "true",
+              "displayName": "true"
+            },
+            {
+              "id": "false",
+              "displayName": "false"
+            }
+          ]
+        },
+        "fb3f7bac-b6c8-4234-aaec-b1b2876e6117": {
+          "_id": "fb3f7bac-b6c8-4234-aaec-b1b2876e6117",
+          "_rev": "53678905",
+          "attributes": {
+            "username": "mafzal878@yopmail.com",
+            "mail": "mafzal878@yopmail.com"
+          },
+          "_type": {
+            "_id": "SetStateNode",
+            "name": "Set State",
+            "collection": true
+          },
+          "_outcomes": [
+            {
+              "id": "outcome",
+              "displayName": "Outcome"
+            }
+          ]
+        },
+        "f1308559-6606-469a-996a-795ee572fa8d": {
+          "_id": "f1308559-6606-469a-996a-795ee572fa8d",
+          "_rev": "-171588285",
+          "popupEnabled": true,
+          "_type": {
+            "_id": "DebugNode",
+            "name": "Debug Node",
+            "collection": true
+          },
+          "_outcomes": [
+            {
+              "id": "outcome",
+              "displayName": "Outcome"
+            }
+          ]
+        },
+        "642576cb-ec48-41d2-9730-97c14895bae2": {
+          "_id": "642576cb-ec48-41d2-9730-97c14895bae2",
+          "_rev": "163617254",
+          "popupEnabled": true,
+          "_type": {
+            "_id": "DebugNode",
+            "name": "Debug Node",
+            "collection": true
+          },
+          "_outcomes": [
+            {
+              "id": "outcome",
+              "displayName": "Outcome"
+            }
+          ]
+        },
+        "c428c553-be1f-4d22-b072-9d02a6e806c1": {
+          "_id": "c428c553-be1f-4d22-b072-9d02a6e806c1",
+          "_rev": "244325580",
+          "popupEnabled": true,
+          "_type": {
+            "_id": "DebugNode",
+            "name": "Debug Node",
+            "collection": true
+          },
+          "_outcomes": [
+            {
+              "id": "outcome",
+              "displayName": "Outcome"
+            }
+          ]
+        },
+        "c51ea46d-33b8-44b7-8652-5d23e74ad84b": {
+          "_id": "c51ea46d-33b8-44b7-8652-5d23e74ad84b",
+          "_rev": "-1902925683",
+          "popupEnabled": true,
+          "_type": {
+            "_id": "DebugNode",
+            "name": "Debug Node",
+            "collection": true
+          },
+          "_outcomes": [
+            {
+              "id": "outcome",
+              "displayName": "Outcome"
+            }
+          ]
+        },
+        "422844ca-a4df-403d-a99f-745a1c2dfd14": {
+          "_id": "422844ca-a4df-403d-a99f-745a1c2dfd14",
+          "_rev": "1478536064",
+          "popupEnabled": true,
+          "_type": {
+            "_id": "DebugNode",
+            "name": "Debug Node",
+            "collection": true
+          },
+          "_outcomes": [
+            {
+              "id": "outcome",
+              "displayName": "Outcome"
+            }
+          ]
+        },
+        "393f491b-6c95-4730-9154-929bea04a2ab": {
+          "_id": "393f491b-6c95-4730-9154-929bea04a2ab",
+          "_rev": "-1638683264",
+          "popupEnabled": true,
+          "_type": {
+            "_id": "DebugNode",
+            "name": "Debug Node",
+            "collection": true
+          },
+          "_outcomes": [
+            {
+              "id": "outcome",
+              "displayName": "Outcome"
+            }
+          ]
+        },
+        "0ffccab9-c997-4b10-895e-ed4400cb97d5": {
+          "_id": "0ffccab9-c997-4b10-895e-ed4400cb97d5",
+          "_rev": "-1969351762",
+          "popupEnabled": true,
+          "_type": {
+            "_id": "DebugNode",
+            "name": "Debug Node",
+            "collection": true
+          },
+          "_outcomes": [
+            {
+              "id": "outcome",
+              "displayName": "Outcome"
+            }
+          ]
+        }
+      },
+      "innerNodes": {},
+      "scripts": {
+        "0ab5d789-c92d-4730-ab55-dd9b772977b5": {
+          "_id": "0ab5d789-c92d-4730-ab55-dd9b772977b5",
+          "name": "__staples_1kosmos_verify_magic_link",
+          "description": "__staples_1kosmos_verify_magic_link",
+          "script": "\"// File: your-verify-otp-script.js\\n\\nvar KosmosSDK = require(\\\"KosmosSDKLib\\\");\\n\\n// --- Configuration Constants ---\\n// These are grouped by purpose for clarity and easier management.\\n// They should be consistent with your other scripts (e.g., sendOTP).\\n\\n// --- 1. 1Kosmos Service Configuration for the Staples CIAM Community ---\\nvar KOSMOS_API_LICENSE_KEY = \\\"b3e3863b-1060-420d-8583-919c7f595613\\\";\\nvar KOSMOS_STAGING_TENANT_ID = \\\"63d0359ef83ef571e35fda6c\\\";\\nvar KOSMOS_STAGING_TENANT_TAG = \\\"staging\\\";\\nvar STAPLES_CIAM_COMMUNITY_ID = \\\"67f6c98cb4ff8970085b11ca\\\";\\nvar STAPLES_CIAM_COMMUNITY_NAME = \\\"staplesciam\\\";\\nvar PUBLIC_KEY = \\\"KptAI9Vk/79odk5lsWD1DVzI2rkK5ZoLtcbSJqkgT7YdP6UTBszFjPTrDReL9hAPVk0O/40tW6RzVUYqRAKmBg==\\\";\\n\\n// --- 2. Calling Application Configuration ---\\n// This identifies the application that is making the API request.\\nvar STAPLES_P1AIC_APP_ID = \\\"com.staples.p1aic\\\"; // Identifier for the P1AIC application\\n\\n// --- 3. Test Case Data ---\\n// These are the specific inputs for this particular test run.\\n\\n    // It's good practice to save the submitted value to the state for logging or later use.\\n   var magicLinkCode = nodeState.get(\\\"magicLinkCode\\\");\\n\\nlogger.error(\\\"received magicLinkCode:\\\" + magicLinkCode )\\n\\n    // Initialize the SDK with the service and application configurations.\\n    KosmosSDK.init({\\n        LICENSE_KEY: KOSMOS_API_LICENSE_KEY,\\n        APP_ID_FOR_REQUEST: STAPLES_P1AIC_APP_ID,\\n        TENANT_TAG: KOSMOS_STAGING_TENANT_TAG,\\n        COMMUNITY_NAME: STAPLES_CIAM_COMMUNITY_NAME\\n    });\\n\\nvar mail = nodeState.get(\\\"mail\\\");\\n\\n    logger.info('[KosmosSDK] Attempting to verify Magic Link for user: {}', mail );\\n\\n    // Call the SDK and check the 'ok' property of the returned object. No try/catch is needed.\\n    var response = KosmosSDK.redeemMagicLink({\\n        communityName : STAPLES_CIAM_COMMUNITY_NAME,\\n        accessCode : magicLinkCode,\\n        xTenantTag : KOSMOS_STAGING_TENANT_TAG,\\n        publicKey : PUBLIC_KEY\\n    });\\n\\n\\n    // Check if the API call itself was successful (e.g., HTTP 200).\\n    if (response.ok) {\\n        logger.info('[KosmosSDK] KosmosSDK.redeemMagicLink API call successful.');\\n        logger.info('[KosmosSDK] Response status: {}', response.status);\\n        logger.info('[KosmosSDK] Response message: {}', response.message);\\n        if (response.json) {\\n            logger.info('[KosmosSDK] Response data: {}', JSON.stringify(response.json));\\n        }\\n\\n        // IMPORTANT: An HTTP 200 OK does not automatically mean the OTP was correct.\\n        // You must inspect the response body to confirm verification.\\n        // We assume a successful verification returns a specific message. Adjust if necessary.\\n        if (response.json && response.json.message === \\\"redeemed\\\") {\\n            logger.info('[KosmosSDK] Magic Link is VALID for user: {}', nodeState.get(\\\"mail\\\"));\\n            outcome = \\\"true\\\"; // Verification succeeded, proceed in the flow.\\n        } else {\\n            logger.warn('[KosmosSDK] Magic Link is INVALID. API call was successful, but the code was not correct.');\\n            outcome = \\\"false\\\"; // Verification failed, stop the flow.\\n        }\\n\\n    } else {\\n        // This block runs for failed API calls (e.g., HTTP 400, 401, 500) or client-side errors.\\n        logger.error('[KosmosSDK] KosmosSDK.redeemMagicLink API call failed.');\\n        logger.error('[KosmosSDK] API Error Status: {}', response.status);\\n        logger.error('[KosmosSDK] API Error Message: {}', response.message);\\n        logger.error('[KosmosSDK] API Error Body: {}', (response.text || \\\"No response body.\\\"));\\n\\n        if (response.error) {\\n            logger.error('[KosmosSDK] Underlying Error: {}', response.error.message);\\n        }\\n\\n        // The API call failed, so the overall outcome is failure.\\n        outcome = \\\"false\\\";\\n    }\"",
+          "default": false,
+          "language": "JAVASCRIPT",
+          "context": "AUTHENTICATION_TREE_DECISION_NODE",
+          "createdBy": "id=af75c5b2-9b62-494a-b732-301977383084,ou=user,ou=am-config",
+          "creationDate": 1749721799925,
+          "lastModifiedBy": "id=af75c5b2-9b62-494a-b732-301977383084,ou=user,ou=am-config",
+          "lastModifiedDate": 1749740100656,
+          "evaluatorVersion": "2.0"
+        },
+        "cfa4194f-2e30-42d7-976e-757949b29e13": {
+          "_id": "cfa4194f-2e30-42d7-976e-757949b29e13",
+          "name": "__staples_1kosmos_generate_Magic_Link",
+          "description": "__staples_1kosmos_generate_Magic_Link",
+          "script": "\"var KosmosSDK = require(\\\"KosmosSDKLib\\\");\\n\\nvar KOSMOS_API_LICENSE_KEY = \\\"b3e3863b-1060-420d-8583-919c7f595613\\\";\\nvar KOSMOS_STAGING_TENANT_ID = \\\"63d0359ef83ef571e35fda6c\\\"; // The ID for the 'staging' tenant\\nvar KOSMOS_STAGING_TENANT_TAG = \\\"staging\\\";\\n\\n// Email template and subject\\nvar EMAIL_TEMPLATE_B64 = \\\"Q2xpY2sgdGhlIGJ1dHRvbiBiZWxvdyB0byBsb2cgaW4gdG8gMUtvc21vcyBEZXZlbG9wZXIgRXhwZXJpZW5jZS4gaHR0cHM6Ly9ibG9ja2lkLXRyaWFsLjFrb3Ntb3MubmV0L2RldnBvcnRhbC9kZW1vP2NvZGU9e3tNQUdJQ0xJTkt9fSBUaGlzIGxpbmsgd2lsbCBleHBpcmUgaW4gMjAgbWludXRlcy4=\\\";\\nvar EMAIL_SUBJECT = \\\"Continue Your Verification\\\";\\nvar DEFAULT_TTL_SECONDS = 700;\\nvar Created_BY = \\\"application\\\";\\nvar Version = \\\"v0\\\";\\nvar Type = \\\"verification_link\\\";\\n\\nvar STAPLES_CIAM_COMMUNITY_NAME = \\\"staplesciam\\\";\\nvar STAPLES_P1AIC_APP_ID = \\\"com.staples.p1aic\\\";\\n\\n\\nKosmosSDK.init({\\n    LICENSE_KEY: KOSMOS_API_LICENSE_KEY,\\n    APP_ID_FOR_REQUEST: STAPLES_P1AIC_APP_ID,\\n    TENANT_TAG: KOSMOS_STAGING_TENANT_TAG,\\n    COMMUNITY_NAME: STAPLES_CIAM_COMMUNITY_NAME\\n});\\n\\nif (resumedFromSuspend) {\\n    logger.info(\\\"Resumed from suspend.\\\");\\n\\n    var receivedCode = requestParameters.get(\\\"code\\\") ? requestParameters.get(\\\"code\\\")[0]: null;\\n    var storedCode = nodeState.get(\\\"magicLinkCode\\\");\\n\\n    if (!receivedCode) {\\n        logger.error(\\\"Resumption FAILED: 'code' parameter was not found in the resume request.\\\");\\n        action.goTo(false);\\n    }\\n\\n    logger.debug(\\\"Received: '{}', Expected: '{}'\\\", receivedCode, storedCode);\\n\\n    if (receivedCode === storedCode) {\\n        logger.info(\\\"Magic link code validation(local) successful.\\\");\\n        // The user has proven ownership of the email.\\n        action.goTo(true);\\n    } else {\\n        logger.error(\\\"Magic link code validation FAILED. Received code does not match stored code.\\\");\\n        action.goTo(false);\\n    }\\n} else {\\n\\n    logger.info('[KosmosSDK] Attempting to send Magic Link for user: {}', nodeState.get(\\\"mail\\\"));\\n\\n    var response = KosmosSDK.sendMagicLink({\\n        communityName: STAPLES_CIAM_COMMUNITY_NAME,\\n        emailTo: nodeState.get(\\\"mail\\\"),\\n        ttl_seconds: DEFAULT_TTL_SECONDS,\\n        xTenantTag: KOSMOS_STAGING_TENANT_TAG,\\n    });\\n\\n    // Check the 'ok' flag to determine if the call was successful.\\n    if (response.ok) {\\n\\n        logger.info('[KosmosSDK] KosmosSDK.sendMagicLink API call successful.');\\n        logger.info('[KosmosSDK] Response status: {}', response.status);\\n        logger.info('[KosmosSDK] Response data: {}', JSON.stringify(response.json));\\n\\n        // --- UPDATED VERIFICATION LOGIC ---\\n        // A successful API call should return a JSON body with a 'messageId'\\n        // and an 'info' field confirming the request was accepted.\\n        if (\\n            response.json && response.json.emailResult && response.json.emailResult.status === true && response.json.emailResult.statusCode === 0 &&\\n            typeof response.json.link && response.json.code) {\\n\\n            logger.info('[KosmosSDK] Magic Link send request was successfully accepted by the server. Message ID: {}', response.json.messageId);\\n\\n            logger.info(\\\"[MagicLink Self-Email] 1Kosmos code generation successful.\\\");\\n\\n            var magicCode = response.json.code;\\n\\n            // Store the code in sharedState for verification upon resumption.\\n            nodeState.putShared(\\\"magicLinkCode\\\", magicCode);\\n\\n            // Suspend the journey and send the email within the suspend callback.\\n            action.suspend(\\n                'Check your email for a link to verify.',\\n                function(resumeUri) {\\n                    // This callback function is executed just before the journey pauses.\\n                    // 'resumeUri' is the unique URL to continue this specific journey instance.\\n\\n                    var username = nodeState.get(\\\"username\\\"); // Get username if available\\n                    var mail = nodeState.get(\\\"mail\\\"); // Get username if available\\n\\n                    // Append the 1Kosmos code to the resume URI. This is the link we will email.\\n                    var resetLink = resumeUri + \\\"&code=\\\" + magicCode;\\n\\n                    var emailGreeting = \\\"Hi \\\" + username + \\\",<br><br>\\\";\\n\\n                    var emailBody = \\\"<html><body>\\\" +\\n                        emailGreeting +\\n                        \\\"Please click the link below to continue:<br>\\\" +\\n                        '<a href=\\\"' + resetLink + '\\\">Continue Verification</a><br><br>' +\\n                        \\\"This link will expire in approximately \\\" + (DEFAULT_TTL_SECONDS / 60) + \\\" minutes.<br><br>\\\" +\\n                        \\\"If you did not request this, please ignore this email.<br><br>\\\" +\\n                        \\\"Thank you.\\\" +\\n                        \\\"</body></html>\\\";\\n\\n                    try {\\n                        var emailParams = {\\n                            \\\"to\\\": mail,\\n                            \\\"subject\\\": \\\"Continue Your Verification\\\",\\n                            \\\"body\\\": emailBody,\\n                            \\\"contentType\\\": \\\"text/html\\\"\\n                        };\\n\\n                        // Use the platform's email service to send the email.\\n                        openidm.action(\\\"external/email\\\", \\\"send\\\", emailParams);\\n                        logger.info(\\\"Verification email successfully dispatched to: {} for user: {}\\\", mail, username);\\n\\n                    } catch (e) {\\n                        logger.error(\\\"CRITICAL: Failed to send email to {}. Error: {}\\\", mail, e.message);\\n                        // At this point, the journey is already committed to suspending.\\n                        // The user will be stuck unless they try again.\\n                        // Consider how to handle this case (e.g., logging for manual intervention).\\n                    }\\n                }\\n            );\\n\\n            // The script execution for this transaction ends here\\n           action.goTo(true); // The request was accepted, proceed to the next step.\\n        } else {\\n            logger.error('[KosmosSDK] Magic Link send request failed: API returned success status, but the response body was unexpected.');\\n            action.goTo(false); // The response was not what we expected, so we treat it as a failure.\\n        }\\n\\n    } else {\\n        // This block runs for failed API calls (e.g., HTTP 400, 401, 500) or client-side errors.\\n        logger.error('[KosmosSDK] KosmosSDK.sendMagicLink API call failed.');\\n\\n        // Log details from the structured response object.\\n        logger.error('[KosmosSDK] API Error Status: {}', response.status);\\n        logger.error('[KosmosSDK] API Error Message: {}', response.message);\\n\\n        // The body of the error response might be text or JSON. Logging `text` is safest.\\n        logger.error('[KosmosSDK] API Error Body: {}', (response.text || \\\"No response body.\\\"));\\n\\n        if (response.error) {\\n            // This logs any underlying client-side exception (e.g., from httpClient).\\n            logger.error('[KosmosSDK] Underlying Error: {}', response.error.message);\\n        }\\n\\n        // Set the outcome to failure because the API call was not successful.\\n        action.goTo(true);\\n    }\\n}\"",
+          "default": false,
+          "language": "JAVASCRIPT",
+          "context": "AUTHENTICATION_TREE_DECISION_NODE",
+          "createdBy": "id=af75c5b2-9b62-494a-b732-301977383084,ou=user,ou=am-config",
+          "creationDate": 1749659370354,
+          "lastModifiedBy": "id=af75c5b2-9b62-494a-b732-301977383084,ou=user,ou=am-config",
+          "lastModifiedDate": 1749830134290,
+          "evaluatorVersion": "2.0"
+        }
+      },
+      "emailTemplates": {},
+      "socialIdentityProviders": {},
+      "themes": [],
+      "saml2Entities": {},
+      "circlesOfTrust": {}
+    }
+  }
+}

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# This script generates an initial keypair for development purposes.
+# This script generates a locally-trusted keypair for development using mkcert.
 
 mv -f ./dev/tlskey.p12 ./dev/tlskey.p12.bak
 mv -f ./dev/pubCert.crt ./dev/pubCert.crt.bak
@@ -15,29 +15,28 @@ export $(cat .env | grep HOSTNAME_DS)
 export $(cat .env | grep HOSTNAME_PLAYGROUND)
 export $(cat .env | grep SSL_PWD)
 
-# Create private key
+# Create certificate and private key using mkcert
+# The public cert (pubCert.crt) is created directly.
+# A temporary private key is created, which will be bundled into the .p12 file.
 #
-keytool -genkey \
-  -alias tlskey \
-  -keystore dev/tlskey.p12 \
-  -storetype PKCS12 \
-  -keyalg RSA -storepass ${SSL_PWD} \
-  -keypass ${SSL_PWD} \
-  -validity 365 \
-  -keysize 2048 \
-  -dname "CN=${HOSTNAME}" \
-  -ext san=dns:${HOSTNAME},dns:${HOSTNAME_PF},dns:${HOSTNAME_PD},dns:${HOSTNAME_AM},dns:${HOSTNAME_DS},dns:${HOSTNAME_PLAYGROUND},dns:localhost
+mkcert \
+  -cert-file dev/pubCert.crt \
+  -key-file dev/tlskey-temp.key \
+  ${HOSTNAME} ${HOSTNAME_PF} ${HOSTNAME_PD} ${HOSTNAME_AM} ${HOSTNAME_DS} ${HOSTNAME_PLAYGROUND} localhost
 
-# Export public cert
+# Package key and cert into a PKCS#12 file using openssl
+# This creates the final tlskey.p12 file required by Java applications.
 #
-keytool -exportcert \
-  -keystore dev/tlskey.p12 \
-  -storetype PKCS12 \
-  -storepass ${SSL_PWD} \
-  -keypass ${SSL_PWD} \
-  -alias tlskey \
-  -file dev/pubCert.crt \
-  -rfc
+openssl pkcs12 -export \
+  -out dev/tlskey.p12 \
+  -inkey dev/tlskey-temp.key \
+  -in dev/pubCert.crt \
+  -name tlskey \
+  -password pass:${SSL_PWD}
+
+# Clean up the temporary private key
+#
+rm dev/tlskey-temp.key
 
 # Unset all variables
 #
