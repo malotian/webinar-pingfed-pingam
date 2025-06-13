@@ -3,6 +3,8 @@
 #
 build_prereq: build_docker_openjdk_17 build_tomcat
 
+build_all_x: build_java  build_docker_am  build_docker_ds
+
 # Compile java and build all images
 #
 build_all: build_java build_docker_pf build_docker_am build_docker_pd build_docker_ds

@@ -1,25 +1,6 @@
 version: '3.4'
 services:
 
-  # user: Administrator/Password1
-  # https://pf.webinar.local:9999
-  pfwebinarlocal:
-    image: webinar/pf:latest
-    container_name: pfwebinarlocal
-    hostname: pf.webinar.local
-    restart: on-failure
-    networks:
-      - webinar
-    ports:
-      - "9031:9031"
-      - "9999:9999"
-      - "5005:5005"
-    environment:
-      - "PF_RUN_PF_CONSOLE_TITLE=Webinar"
-      - "PF_RUN_PF_ADMIN_BASEURL=https://${PF_ADMIN_NODE}"
-    volumes:
-      - ./products/pingfederate/pingfederate.lic:/opt/pingfederate/server/default/conf/pingfederate.lic
-
   # amAdmin, Password1
   # https://openam.webinar.local:8449/openam/XUI/#login/
   # https://openam.webinar.local:8449/openam/oauth2/webinar/.well-known/openid-configuration
@@ -40,22 +21,6 @@ services:
       - "SSL_PWD=${SSL_PWD}"
       - "SSL_PORT=8449"
       - "HOSTNAME=${HOSTNAME_AM}"
-
-  # cn=administrator/ Password1
-  # https://pd.webinar.local:9443/console
-  pdwebinarlocal:
-    image: webinar/pd:latest
-    container_name: pdwebinarlocal
-    hostname: pd.webinar.local
-    restart: on-failure
-    networks:
-      - webinar
-    ports:
-      - "9443:9443"
-      - "389:389"
-      - "636:636"
-    volumes:
-      - ./products/pingdirectory/pingdirectory.lic:/opt/pingdirectory/licence.lic
 
   # uid=admin/ Password1
   # no console
